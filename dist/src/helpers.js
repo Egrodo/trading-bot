@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RateLimiter = void 0;
+exports.isCommand = exports.RateLimiter = void 0;
 // User specific debounce function
 function RateLimiter(delay, fn) {
     const userMap = new Map();
@@ -19,4 +19,10 @@ function RateLimiter(delay, fn) {
     };
 }
 exports.RateLimiter = RateLimiter;
+function isCommand(msgContent, commandType) {
+    if (msgContent.charAt(0) === '!') {
+        return msgContent.substr(1, msgContent.length).trim().toLowerCase() === commandType;
+    }
+}
+exports.isCommand = isCommand;
 //# sourceMappingURL=helpers.js.map

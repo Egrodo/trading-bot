@@ -24,4 +24,10 @@ function RateLimiter(delay: number, fn: Function): (msg: Message) => void {
   };
 }
 
-export { RateLimiter };
+function isCommand(msgContent: string, commandType: string): boolean {
+  if (msgContent.charAt(0) === '!') {
+    return msgContent.substr(1, msgContent.length).trim().toLowerCase() === commandType;
+  }
+}
+
+export { RateLimiter, isCommand };

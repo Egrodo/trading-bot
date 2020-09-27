@@ -12,30 +12,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const helpers_1 = require("../helpers");
-const UserManager_1 = __importDefault(require("./UserManager"));
-const bot_1 = require("../bot");
-const messages_1 = __importDefault(require("../static/messages"));
-const { signupSuccess, signupFailure } = messages_1.default;
-class TradingMessageHandler {
-    constructor(client) {
-        this._userManager = new UserManager_1.default();
-        client.channels
-            .fetch(bot_1.TRADING_SIM_CHANNEL_ID)
-            // @ts-ignore
-            .then((channel) => (this._tradingChannel = channel));
+const DatabaseManager_1 = __importDefault(require("./DatabaseManager"));
+// This class will handle getting and setting user information
+// - signups
+// - balance checks
+// - balance transfers?
+class UserManager {
+    constructor() {
+        this._db = new DatabaseManager_1.default();
     }
-    onMessage(msg) {
+    deleteUserAccount(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { content } = msg;
-            if (helpers_1.isCommand(content, 'signup')) {
-                yield this._userManager.signupNewUser(msg);
-            }
-            else if (helpers_1.isCommand(content, 'deleteaccount')) {
-                yield this._userManager.deleteUserAccount(msg.author);
-            }
+            yield this._db.removeUserAccount(user);
+        });
+    }
+    signupNewUser(msg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._db.createNewUser(msg.author);
         });
     }
 }
-exports.default = TradingMessageHandler;
-//# sourceMappingURL=TradingMessageHandler.js.map
+exports.default = UserManager;
+//# sourceMappingURL=UserManager.js.map
