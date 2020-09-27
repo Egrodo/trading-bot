@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isCommand = exports.RateLimiter = void 0;
+exports.formatBalanceToReadable = exports.isCommand = exports.RateLimiter = void 0;
 // User specific debounce function
 function RateLimiter(delay, fn) {
     const userMap = new Map();
@@ -25,4 +25,8 @@ function isCommand(msgContent, commandType) {
     }
 }
 exports.isCommand = isCommand;
+function formatBalanceToReadable(balance) {
+    return `$${(balance / 100).toLocaleString()}`;
+}
+exports.formatBalanceToReadable = formatBalanceToReadable;
 //# sourceMappingURL=helpers.js.map

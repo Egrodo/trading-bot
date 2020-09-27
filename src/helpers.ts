@@ -30,4 +30,8 @@ function isCommand(msgContent: string, commandType: string): boolean {
   }
 }
 
-export { RateLimiter, isCommand };
+function formatBalanceToReadable(balance: number): string {
+  return `$${(balance / 100).toLocaleString()}`;
+}
+
+export { RateLimiter, isCommand, formatBalanceToReadable };

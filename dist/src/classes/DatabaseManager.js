@@ -16,22 +16,13 @@ const nano_1 = __importDefault(require("nano"));
 const auth_json_1 = require("../../auth.json");
 const OutgoingMessageHandler_1 = __importDefault(require("./OutgoingMessageHandler"));
 const ErrorReporter_1 = require("./ErrorReporter");
+const helpers_1 = require("../helpers");
 const messages_1 = __importDefault(require("../static/messages"));
-const { signupSuccess, signupFailure } = messages_1.default;
+const { signupSuccess, signupAgainSuccess, signupFailure } = messages_1.default;
 const DB_URL = `http://${auth_json_1.dbUser}:${auth_json_1.dbPass}@174.138.58.238:5984`;
 class DatabaseManager {
     constructor() {
         this._dbConnection = nano_1.default(DB_URL);
-    }
-    createUserDocument(user) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const NewUser = {
-                _id: user.id,
-                balance: 1000 * 100,
-                tradeHistory: [],
-            };
-            return this._userDb.insert(NewUser);
-        });
     }
     connectToUsersDb() {
         this._userDb = this._dbConnection.use('users');
@@ -40,17 +31,15 @@ class DatabaseManager {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const userDoc = yield this._userDb.get(user.id);
-                console.log(userDoc);
                 return userDoc;
             }
             catch (err) {
-                ErrorReporter_1.warnChannel("Failed to get your account. I'll PM my creator to report this :(");
-                ErrorReporter_1.errorReportToCreator('User getting failed? ', err, user);
+                console.log(err);
+                // No account most likely
+                return;
             }
         });
     }
-    // TODO: Don't *actually* delete the user's account, just mark it deleted that way they can't abuse this to get infinite money.
-    // TODO: Accurately report the starting balance in this case.
     // TODO: Move the strings to the messages file
     // TODO: Intro tutorial PM to them
     removeUserAccount(user) {
@@ -72,13 +61,18 @@ class DatabaseManager {
                     return;
                 }
             }
-            // TODO: Don't do this.
-            const result = yield this._userDb.destroy(user.id, userDoc._rev);
+            if (userDoc.deleted) {
+                ErrorReporter_1.warnChannel(`You do not have an account with us. Create one with "!signup".`);
+                return;
+            }
+            const updatedUser = Object.assign(Object.assign({}, userDoc), { deleted: true });
+            // Insert at the revision with the modified property to indicate that the account is "deleted".
+            const result = yield this._userDb.insert(updatedUser);
             if (result.ok) {
                 OutgoingMessageHandler_1.default.sendToTrading(`Successfully deleted your account. If you'd like to recreate it at any point use the "!signup" command.`);
             }
             else {
-                ErrorReporter_1.warnChannel("Failed to delete account.  I'll PM my creator to report this :(");
+                ErrorReporter_1.warnChannel("Failed to delete account. I'll PM my creator to report this :(");
                 ErrorReporter_1.errorReportToCreator('User document creation failed? ', result, user);
             }
         });
@@ -87,27 +81,47 @@ class DatabaseManager {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this._userDb)
                 this.connectToUsersDb();
-            let result;
-            try {
-                result = yield this.createUserDocument(user);
+            const userDb = yield this.getExistingUser(user);
+            if (!userDb) {
+                try {
+                    const NewUser = {
+                        _id: user.id,
+                        balance: 10000 * 100,
+                        tradeHistory: [],
+                        deleted: false,
+                    };
+                    const result = yield this._userDb.insert(NewUser);
+                    if (result.ok === true) {
+                        OutgoingMessageHandler_1.default.sendToTrading(signupSuccess);
+                    }
+                    else {
+                        ErrorReporter_1.warnChannel(signupFailure);
+                        ErrorReporter_1.errorReportToCreator('User document creation failed? ', result, user);
+                    }
+                }
+                catch (err) {
+                    ErrorReporter_1.warnChannel("Failed to create account. I'll PM my creator to report this :(");
+                    ErrorReporter_1.errorReportToCreator('User document creation failed? ', err, user);
+                    return;
+                }
             }
-            catch (err) {
-                if (err.reason === 'Document update conflict.') {
-                    ErrorReporter_1.warnChannel(`You already have an account.`);
+            else if (userDb.deleted === true) {
+                // Perhaps their account exists but is "deleted". Update that.
+                // Re-create it
+                const updatedUser = Object.assign(Object.assign({}, userDb), { deleted: false });
+                const result = yield this._userDb.insert(updatedUser);
+                if (result.ok === true) {
+                    OutgoingMessageHandler_1.default.sendToTrading(signupAgainSuccess(helpers_1.formatBalanceToReadable(userDb.balance)));
                 }
                 else {
-                    ErrorReporter_1.warnChannel("Failed to create account.  I'll PM my creator to report this :(");
-                    ErrorReporter_1.errorReportToCreator('User document creation failed? ', err, user);
+                    ErrorReporter_1.warnChannel(signupFailure);
+                    ErrorReporter_1.errorReportToCreator('User document update failed? ', result, user);
                 }
+            }
+            else if (userDb.deleted === false) {
+                // They trippin'
+                ErrorReporter_1.warnChannel(`You already have an account.`);
                 return;
-            }
-            if (result.ok === true) {
-                OutgoingMessageHandler_1.default.sendToTrading(signupSuccess);
-            }
-            else {
-                ErrorReporter_1.warnChannel(signupFailure);
-                ErrorReporter_1.errorReportToCreator('User document creation failed? ', result, user);
-                console.error(result);
             }
         });
     }
