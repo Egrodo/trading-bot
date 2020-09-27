@@ -26,49 +26,41 @@ class DatabaseManager {
     connectToUsersDb() {
         this._userDb = this._dbConnection.use('users');
     }
-    getExistingUser(user) {
+    getUserDocument(user) {
         return __awaiter(this, void 0, void 0, function* () {
+            const response = {};
             try {
-                const userDoc = yield this._userDb.get(user.id);
-                return userDoc;
+                response.userDoc = yield this._userDb.get(user.id);
             }
             catch (err) {
                 console.log(err);
-                return;
+                response.error = err.reason;
             }
+            return response;
         });
     }
     removeUserAccount(user) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this._userDb)
                 this.connectToUsersDb();
-            let userDoc;
-            try {
-                userDoc = yield this._userDb.get(user.id);
-            }
-            catch (err) {
-                if (err.reason === 'deleted') {
-                    ErrorReporter_1.warnChannel(messages_1.default.noAccount);
-                    return;
-                }
-                else {
-                    ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
-                    ErrorReporter_1.errorReportToCreator('User document creation failed? ', err, user);
-                    return;
-                }
-            }
-            if (userDoc.deleted) {
+            const userDocResult = yield this.getUserDocument(user);
+            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true || (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
                 ErrorReporter_1.warnChannel(messages_1.default.noAccount);
                 return;
             }
-            const updatedUser = Object.assign(Object.assign({}, userDoc), { deleted: true });
+            else if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'failed') {
+                ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
+                ErrorReporter_1.errorReportToCreator('User document creation failed? ', userDocResult.error, user);
+                return;
+            }
+            const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { deleted: true });
             const result = yield this._userDb.insert(updatedUser);
             if (result.ok) {
                 OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.deleteSuccess);
             }
             else {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
-                ErrorReporter_1.errorReportToCreator('User document creation failed? ', result, user);
+                ErrorReporter_1.errorReportToCreator('User document update failed? ', result, user);
             }
         });
     }
@@ -76,8 +68,13 @@ class DatabaseManager {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this._userDb)
                 this.connectToUsersDb();
-            const userDb = yield this.getExistingUser(user);
-            if (!userDb) {
+            const userDocResult = yield this.getUserDocument(user);
+            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'failed') {
+                ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
+                ErrorReporter_1.errorReportToCreator('User document creation failed? ', userDocResult, user);
+                return;
+            }
+            if (!userDocResult.userDoc) {
                 try {
                     const NewUser = {
                         _id: user.id,
@@ -100,20 +97,40 @@ class DatabaseManager {
                     return;
                 }
             }
-            else if (userDb.deleted === true) {
-                const updatedUser = Object.assign(Object.assign({}, userDb), { deleted: false });
+            else if (userDocResult.userDoc.deleted === true) {
+                const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { deleted: false });
                 const result = yield this._userDb.insert(updatedUser);
                 if (result.ok === true) {
-                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.signupAgainSuccess(helpers_1.formatBalanceToReadable(userDb.balance)));
+                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.signupAgainSuccess(helpers_1.formatBalanceToReadable(userDocResult.userDoc.balance)));
                 }
                 else {
                     ErrorReporter_1.warnChannel(messages_1.default.signupFailure);
                     ErrorReporter_1.errorReportToCreator('User document update failed? ', result, user);
                 }
             }
-            else if (userDb.deleted === false) {
+            else if (userDocResult.userDoc) {
                 ErrorReporter_1.warnChannel(`You already have an account.`);
                 return;
+            }
+        });
+    }
+    getBalance(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this._userDb)
+                this.connectToUsersDb();
+            const userDocResult = yield this.getUserDocument(user);
+            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true || (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
+                ErrorReporter_1.warnChannel(messages_1.default.noAccount);
+            }
+            else if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'failed') {
+                ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+            }
+            else if (userDocResult.userDoc) {
+                return helpers_1.formatBalanceToReadable(userDocResult.userDoc.balance);
+            }
+            else {
+                ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+                ErrorReporter_1.errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
             }
         });
     }

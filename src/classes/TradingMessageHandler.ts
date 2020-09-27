@@ -23,6 +23,12 @@ class TradingMessageHandler {
       await this._userManager.signupNewUser(msg);
     } else if (isCommand(content, 'deleteaccount')) {
       await this._userManager.deleteUserAccount(msg.author);
+    } else if (
+      isCommand(content, 'checkbalance') ||
+      isCommand(content, 'balance') ||
+      isCommand(content, 'balancecheck')
+    ) {
+      await this._userManager.checkBalance(msg.author);
     }
   }
 }

@@ -33,6 +33,11 @@ class TradingMessageHandler {
             else if (helpers_1.isCommand(content, 'deleteaccount')) {
                 yield this._userManager.deleteUserAccount(msg.author);
             }
+            else if (helpers_1.isCommand(content, 'checkbalance') ||
+                helpers_1.isCommand(content, 'balance') ||
+                helpers_1.isCommand(content, 'balancecheck')) {
+                yield this._userManager.checkBalance(msg.author);
+            }
         });
     }
 }

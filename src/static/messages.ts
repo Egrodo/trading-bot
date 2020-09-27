@@ -7,6 +7,8 @@ const messages = {
   failedToDelete: `Failed to delete account. I'll PM my creator to report this :(`,
   deleteSuccess: `Successfully deleted your account. If you'd like to recreate it at any point use the "!signup" command.`,
   dupAccount: `You already have an account with us. Use `,
+  failedToGetAccount: `Failed to get your account. I'll PM my creator to report this :(`,
+  checkBalance: (balance) => `You have a balance of ${balance}.`,
 };
 
 export default { ...messages };

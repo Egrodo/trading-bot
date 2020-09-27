@@ -13,6 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const DatabaseManager_1 = __importDefault(require("./DatabaseManager"));
+const OutgoingMessageHandler_1 = __importDefault(require("./OutgoingMessageHandler"));
+const messages_1 = __importDefault(require("../static/messages"));
 class UserManager {
     constructor() {
         this._db = new DatabaseManager_1.default();
@@ -25,6 +27,14 @@ class UserManager {
     signupNewUser(msg) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this._db.createNewUser(msg.author);
+        });
+    }
+    checkBalance(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const balance = yield this._db.getBalance(user);
+            if (balance != null) {
+                OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.checkBalance(balance));
+            }
         });
     }
 }
