@@ -46,8 +46,6 @@ class DatabaseManager {
     }
   }
 
-  // TODO: Move the strings to the messages file
-  // TODO: Intro tutorial PM to them
   public async removeUserAccount(user: User): Promise<void> {
     if (!this._userDb) this.connectToUsersDb();
 
