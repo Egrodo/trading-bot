@@ -5,8 +5,9 @@
     "outDir": "dist",
     "sourceMap": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "removeComments": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", ".vscode"]
+  "exclude": ["node_modules", ".vscode", ".git", "dist"]
 }

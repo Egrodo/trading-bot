@@ -1,4 +1,4 @@
-import * as Discord from 'discord.js';
+import { Client, Message } from 'discord.js';
 
 import TradingMessageHandler from './classes/TradingMessageHandler';
 import { init as ErrorReporterInit } from './classes/ErrorReporter';
@@ -11,7 +11,7 @@ import { RateLimiter } from './helpers';
 const COMMAND_COOLDOWN = 1.5 * 1000;
 export const TRADING_SIM_CHANNEL_ID = '759562306417328148';
 
-const client = new Discord.Client();
+const client = new Client();
 
 function init() {
   const limitedMessageHandler = RateLimiter(COMMAND_COOLDOWN, MessageRouter);
@@ -21,7 +21,7 @@ function init() {
 }
 
 // Handles the direction of messages into their respective handler class
-function MessageRouter(msg: Discord.Message) {
+function MessageRouter(msg: Message) {
   if (msg?.channel?.id === TRADING_SIM_CHANNEL_ID) {
     new TradingMessageHandler(client).onMessage(msg);
   }

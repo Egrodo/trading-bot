@@ -1,0 +1,1 @@
+{"version":3,"file":"messages.js","sourceRoot":"","sources":["../../src/static/messages.ts"],"names":[],"mappings":";;AAAA,MAAM,QAAQ,GAAG;IACf,aAAa,EAAE,0IAA0I;IACzJ,aAAa,EAAE,8DAA8D;IAC7E,kBAAkB,EAAE,CAAC,OAAO,EAAE,EAAE,CAC9B,0FAA0F,OAAO,yCAAyC;IAC5I,SAAS,EAAE,gEAAgE;IAC3E,cAAc,EAAE,gEAAgE;IAChF,aAAa,EAAE,yGAAyG;IACxH,UAAU,EAAE,2CAA2C;CACxD,CAAC;AAEF,oCAAoB,QAAQ,EAAG"}

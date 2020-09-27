@@ -5,7 +5,6 @@ import OutgoingMessageHandler from './OutgoingMessageHandler';
 import { warnChannel, errorReportToCreator } from './ErrorReporter';
 import { formatBalanceToReadable } from '../helpers';
 import Messages from '../static/messages';
-const { signupSuccess, signupAgainSuccess, signupFailure } = Messages;
 
 const DB_URL = `http://${dbUser}:${dbPass}@174.138.58.238:5984`;
 
@@ -57,17 +56,17 @@ class DatabaseManager {
       userDoc = await this._userDb.get(user.id);
     } catch (err) {
       if (err.reason === 'deleted') {
-        warnChannel(`You do not have an account with us. Create one with "!signup".`);
+        warnChannel(Messages.noAccount);
         return;
       } else {
-        warnChannel("Failed to delete account.  I'll PM my creator to report this :(");
+        warnChannel(Messages.failedToDelete);
         errorReportToCreator('User document creation failed? ', err, user);
         return;
       }
     }
 
     if (userDoc.deleted) {
-      warnChannel(`You do not have an account with us. Create one with "!signup".`);
+      warnChannel(Messages.noAccount);
       return;
     }
 
@@ -76,11 +75,9 @@ class DatabaseManager {
     // Insert at the revision with the modified property to indicate that the account is "deleted".
     const result = await this._userDb.insert(updatedUser);
     if (result.ok) {
-      OutgoingMessageHandler.sendToTrading(
-        `Successfully deleted your account. If you'd like to recreate it at any point use the "!signup" command.`,
-      );
+      OutgoingMessageHandler.sendToTrading(Messages.deleteSuccess);
     } else {
-      warnChannel("Failed to delete account. I'll PM my creator to report this :(");
+      warnChannel(Messages.failedToDelete);
       errorReportToCreator('User document creation failed? ', result, user);
     }
   }
@@ -99,13 +96,13 @@ class DatabaseManager {
 
         const result = await this._userDb.insert(NewUser);
         if (result.ok === true) {
-          OutgoingMessageHandler.sendToTrading(signupSuccess);
+          OutgoingMessageHandler.sendToTrading(Messages.signupSuccess);
         } else {
-          warnChannel(signupFailure);
+          warnChannel(Messages.signupFailure);
           errorReportToCreator('User document creation failed? ', result, user);
         }
       } catch (err) {
-        warnChannel("Failed to create account. I'll PM my creator to report this :(");
+        warnChannel(Messages.failedToDelete);
         errorReportToCreator('User document creation failed? ', err, user);
         return;
       }
@@ -118,9 +115,9 @@ class DatabaseManager {
       };
       const result = await this._userDb.insert(updatedUser);
       if (result.ok === true) {
-        OutgoingMessageHandler.sendToTrading(signupAgainSuccess(formatBalanceToReadable(userDb.balance)));
+        OutgoingMessageHandler.sendToTrading(Messages.signupAgainSuccess(formatBalanceToReadable(userDb.balance)));
       } else {
-        warnChannel(signupFailure);
+        warnChannel(Messages.signupFailure);
         errorReportToCreator('User document update failed? ', result, user);
       }
     } else if (userDb.deleted === false) {
