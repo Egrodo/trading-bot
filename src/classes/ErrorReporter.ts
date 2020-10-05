@@ -12,11 +12,12 @@ const CREATOR_ID = '162278177933230081';
 export async function warnChannel(msg: string, silent: boolean = false) {
   // @ts-expect-error
   const tradingChannel: TextChannel = await client.channels.fetch(TRADING_SIM_CHANNEL_ID);
-  let message = '';
+  const message = new MessageEmbed();
   if (!silent) {
-    message = 'Trading Bot Error: ';
+    message.setColor('#ff0000').setTitle('Trading Bot Error:');
   }
-  message += msg;
+
+  message.setDescription(msg);
   tradingChannel.send(message);
 }
 

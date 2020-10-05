@@ -21,11 +21,11 @@ const CREATOR_ID = '162278177933230081';
 function warnChannel(msg, silent = false) {
     return __awaiter(this, void 0, void 0, function* () {
         const tradingChannel = yield client.channels.fetch(bot_1.TRADING_SIM_CHANNEL_ID);
-        let message = '';
+        const message = new discord_js_1.MessageEmbed();
         if (!silent) {
-            message = 'Trading Bot Error: ';
+            message.setColor('#ff0000').setTitle('Trading Bot Error:');
         }
-        message += msg;
+        message.setDescription(msg);
         tradingChannel.send(message);
     });
 }

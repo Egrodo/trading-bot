@@ -3,7 +3,7 @@ import Nano, { ServerScope, DocumentScope, DocumentInsertResponse, DocumentGetRe
 import { dbUser, dbPass } from '../../auth.json';
 import OutgoingMessageHandler from './OutgoingMessageHandler';
 import { warnChannel, errorReportToCreator } from './ErrorReporter';
-import { formatBalanceToReadable } from '../helpers';
+import { formatAmountToReadable } from '../helpers';
 import Messages from '../static/messages';
 
 const DB_URL = `http://${dbUser}:${dbPass}@174.138.58.238:5984`;
@@ -16,10 +16,21 @@ interface Trade {
   amountTraded: number;
 }
 
+interface MoneyTransfer {
+  sender: User;
+  recipient: User;
+  amount: number;
+  creationTimestamp: Date; // Transfers are only valid for 1 hour, if not accepted within that timeframe then is voided.
+  confirmedFromSender: boolean;
+  confirmedFromReceiver: boolean;
+}
+
+// TODO: Add "currentPortfolio" to type to store a users current holdings
 interface UserDocument {
   _id: string;
   _rev?: string;
-  balance: number; // Total balance represented in cents by a BigInt
+  balance: number; // Total balance represented in cents
+  activeTransfers: MoneyTransfer[]; // Keeps track of any active transfers of money between two users
   tradeHistory: Trade[];
   deleted: boolean;
 }
@@ -41,19 +52,18 @@ class DatabaseManager {
   }
 
   private async getUserDocument(user: User): Promise<UserDocReturnType> {
+    if (!this._userDb) this.connectToUsersDb();
+
     const response: UserDocReturnType = {};
     try {
       response.userDoc = await this._userDb.get(user.id);
     } catch (err) {
-      console.log(err);
       response.error = err.reason;
     }
     return response;
   }
 
   public async removeUserAccount(user: User): Promise<void> {
-    if (!this._userDb) this.connectToUsersDb();
-
     const userDocResult = await this.getUserDocument(user);
 
     if (userDocResult?.userDoc.deleted === true || userDocResult?.error === 'deleted') {
@@ -78,7 +88,6 @@ class DatabaseManager {
   }
 
   public async createNewUser(user: User): Promise<void> {
-    if (!this._userDb) this.connectToUsersDb();
     const userDocResult = await this.getUserDocument(user);
 
     if (userDocResult?.error === 'failed') {
@@ -93,6 +102,7 @@ class DatabaseManager {
           _id: user.id,
           balance: 10000 * 100, // $1000.00 represented in cents
           tradeHistory: [],
+          activeTransfers: [],
           deleted: false,
         };
 
@@ -118,7 +128,7 @@ class DatabaseManager {
       const result = await this._userDb.insert(updatedUser);
       if (result.ok === true) {
         OutgoingMessageHandler.sendToTrading(
-          Messages.signupAgainSuccess(formatBalanceToReadable(userDocResult.userDoc.balance)),
+          Messages.signupAgainSuccess(formatAmountToReadable(userDocResult.userDoc.balance)),
         );
       } else {
         warnChannel(Messages.signupFailure);
@@ -132,18 +142,64 @@ class DatabaseManager {
   }
 
   public async getBalance(user: User): Promise<string> {
-    if (!this._userDb) this.connectToUsersDb();
-
     const userDocResult = await this.getUserDocument(user);
     if (userDocResult?.userDoc.deleted === true || userDocResult?.error === 'deleted') {
+      warnChannel(Messages.noAccount);
+    } else if (userDocResult?.error === 'missing') {
       warnChannel(Messages.noAccount);
     } else if (userDocResult?.error === 'failed') {
       warnChannel(Messages.failedToGetAccount);
     } else if (userDocResult.userDoc) {
-      return formatBalanceToReadable(userDocResult.userDoc.balance);
+      return formatAmountToReadable(userDocResult.userDoc.balance);
     } else {
       warnChannel(Messages.failedToGetAccount);
       errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
+    }
+  }
+
+  // ADMIN ONLY -- Magically makes money appear in the users account.
+  public async grantFunds(toUser: User, grantAmount: number) {
+    // Get toUser doc
+    let userDocResult: UserDocReturnType;
+    try {
+      userDocResult = await this.getUserDocument(toUser);
+    } catch (err) {
+      console.log('ERROR');
+      console.log(err);
+      return;
+    }
+
+    if (userDocResult?.error) {
+      if (userDocResult?.error === 'missing') {
+        warnChannel(Messages.noAccountForUser(toUser.username));
+        return;
+      } else {
+        warnChannel(Messages.failedToGetAccount);
+        errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
+        return;
+      }
+    }
+
+    const toUserDoc = userDocResult.userDoc;
+
+    const existingBalance = toUserDoc.balance;
+    const updatedUserDoc = {
+      ...toUserDoc,
+      balance: existingBalance + grantAmount,
+    };
+
+    const result = await this._userDb.insert(updatedUserDoc);
+    if (result.ok === true) {
+      OutgoingMessageHandler.sendToTrading(
+        Messages.moneyGranted(
+          toUser,
+          formatAmountToReadable(grantAmount),
+          formatAmountToReadable(updatedUserDoc.balance),
+        ),
+      );
+    } else {
+      warnChannel(Messages.signupFailure);
+      errorReportToCreator('User document update failed? ', result, toUserDoc);
     }
   }
 }

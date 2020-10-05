@@ -28,12 +28,13 @@ class DatabaseManager {
     }
     getUserDocument(user) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!this._userDb)
+                this.connectToUsersDb();
             const response = {};
             try {
                 response.userDoc = yield this._userDb.get(user.id);
             }
             catch (err) {
-                console.log(err);
                 response.error = err.reason;
             }
             return response;
@@ -41,8 +42,6 @@ class DatabaseManager {
     }
     removeUserAccount(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this._userDb)
-                this.connectToUsersDb();
             const userDocResult = yield this.getUserDocument(user);
             if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true || (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
                 ErrorReporter_1.warnChannel(messages_1.default.noAccount);
@@ -66,8 +65,6 @@ class DatabaseManager {
     }
     createNewUser(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this._userDb)
-                this.connectToUsersDb();
             const userDocResult = yield this.getUserDocument(user);
             if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'failed') {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
@@ -80,6 +77,7 @@ class DatabaseManager {
                         _id: user.id,
                         balance: 10000 * 100,
                         tradeHistory: [],
+                        activeTransfers: [],
                         deleted: false,
                     };
                     const result = yield this._userDb.insert(NewUser);
@@ -101,7 +99,7 @@ class DatabaseManager {
                 const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { deleted: false });
                 const result = yield this._userDb.insert(updatedUser);
                 if (result.ok === true) {
-                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.signupAgainSuccess(helpers_1.formatBalanceToReadable(userDocResult.userDoc.balance)));
+                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.signupAgainSuccess(helpers_1.formatAmountToReadable(userDocResult.userDoc.balance)));
                 }
                 else {
                     ErrorReporter_1.warnChannel(messages_1.default.signupFailure);
@@ -116,21 +114,57 @@ class DatabaseManager {
     }
     getBalance(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this._userDb)
-                this.connectToUsersDb();
             const userDocResult = yield this.getUserDocument(user);
             if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true || (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
+                ErrorReporter_1.warnChannel(messages_1.default.noAccount);
+            }
+            else if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'missing') {
                 ErrorReporter_1.warnChannel(messages_1.default.noAccount);
             }
             else if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'failed') {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
             }
             else if (userDocResult.userDoc) {
-                return helpers_1.formatBalanceToReadable(userDocResult.userDoc.balance);
+                return helpers_1.formatAmountToReadable(userDocResult.userDoc.balance);
             }
             else {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
                 ErrorReporter_1.errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
+            }
+        });
+    }
+    grantFunds(toUser, grantAmount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let userDocResult;
+            try {
+                userDocResult = yield this.getUserDocument(toUser);
+            }
+            catch (err) {
+                console.log('ERROR');
+                console.log(err);
+                return;
+            }
+            if (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) {
+                if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'missing') {
+                    ErrorReporter_1.warnChannel(messages_1.default.noAccountForUser(toUser.username));
+                    return;
+                }
+                else {
+                    ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+                    ErrorReporter_1.errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
+                    return;
+                }
+            }
+            const toUserDoc = userDocResult.userDoc;
+            const existingBalance = toUserDoc.balance;
+            const updatedUserDoc = Object.assign(Object.assign({}, toUserDoc), { balance: existingBalance + grantAmount });
+            const result = yield this._userDb.insert(updatedUserDoc);
+            if (result.ok === true) {
+                OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.moneyGranted(toUser, helpers_1.formatAmountToReadable(grantAmount), helpers_1.formatAmountToReadable(updatedUserDoc.balance)));
+            }
+            else {
+                ErrorReporter_1.warnChannel(messages_1.default.signupFailure);
+                ErrorReporter_1.errorReportToCreator('User document update failed? ', result, toUserDoc);
             }
         });
     }

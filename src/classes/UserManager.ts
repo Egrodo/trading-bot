@@ -1,18 +1,19 @@
-import { Message, User } from 'discord.js';
+import { Message, User, Client } from 'discord.js';
 
+import { getUserFromMention } from '../helpers';
 import DatabaseManager from './DatabaseManager';
 import OutgoingMessageHandler from './OutgoingMessageHandler';
+import { warnChannel } from './ErrorReporter';
 
 import Messages from '../static/messages';
 
-// This class will handle getting and setting user information
-// - signups
-// - balance checks
-// - balance transfers?
+// This class handles all operations relating directly to the modification of user accounts.
 class UserManager {
   _db?: DatabaseManager;
-  constructor() {
+  _client: Client;
+  constructor(client: Client) {
     this._db = new DatabaseManager();
+    this._client = client;
   }
 
   public async deleteUserAccount(user: User): Promise<void> {
@@ -27,6 +28,68 @@ class UserManager {
     const balance = await this._db.getBalance(user);
     if (balance != null) {
       OutgoingMessageHandler.sendToTrading(Messages.checkBalance(balance));
+    }
+  }
+
+  // ADMIN ONLY COMMAND -- Grants free money to anyone of our choosing!
+  public async grantMoney(msg: Message): Promise<void> {
+    const splitMsg = msg.content.split(/\s+/);
+    if (splitMsg.length < 3) {
+      warnChannel(Messages.invalidCommandSyntax('!grantMoney @userMention $69.42'));
+      return;
+    }
+
+    let toUser;
+    try {
+      toUser = await getUserFromMention(this._client, splitMsg[1]);
+    } catch (err) {
+      warnChannel(Messages.invalidCommandSyntax('!grantMoney @userMention $69.42'));
+      return;
+    }
+
+    // Parse string for total cents requested
+    let dollarAmount = splitMsg[2];
+    let centAmount;
+    if (dollarAmount.includes('.')) {
+      const decimalSplit = dollarAmount.split('.');
+      if (decimalSplit.length > 2) {
+        warnChannel(Messages.invalidCommandSyntax('!sendMoney @userMention $69.42'));
+        return;
+      }
+
+      centAmount = decimalSplit[1];
+
+      if (centAmount.length === 1) centAmount += '0';
+      if (centAmount.length > 2) {
+        warnChannel(Messages.invalidCommandSyntax('!sendMoney @userMention $69.42'));
+        return;
+      }
+
+      dollarAmount = decimalSplit[0];
+    } else centAmount = '0';
+
+    if (dollarAmount[0] === '$' || dollarAmount[1] === '$') {
+      dollarAmount = dollarAmount.replace(/\$+/, '');
+    }
+
+    let totalAmount: number;
+    if (dollarAmount[0] === '-') {
+      totalAmount = Number(dollarAmount) * 100 - Number(centAmount);
+    } else {
+      totalAmount = Number(dollarAmount) * 100 + Number(centAmount);
+    }
+
+    if (isNaN(totalAmount)) {
+      warnChannel(Messages.invalidCommandSyntax('!sendMoney @userMention $69.42'));
+      return;
+    }
+
+    console.log(totalAmount);
+
+    try {
+      this._db.grantFunds(toUser, totalAmount);
+    } catch (err) {
+      // TODO: handle all failure cases, including re-creding the fromUser's account.
     }
   }
 }
