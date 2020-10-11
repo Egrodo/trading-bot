@@ -1,6 +1,7 @@
 import { Message, User, Client } from 'discord.js';
 
-import { getUserFromMention } from '../helpers';
+import helpers from '../helpers';
+const { getUserFromMention } = helpers;
 import DatabaseManager from './DatabaseManager';
 import OutgoingMessageHandler from './OutgoingMessageHandler';
 import { warnChannel } from './ErrorReporter';
@@ -17,6 +18,7 @@ class UserManager {
   }
 
   public async deleteUserAccount(user: User): Promise<void> {
+    // TODO: Confirm this with the user.
     await this._db.removeUserAccount(user);
   }
 
@@ -35,7 +37,9 @@ class UserManager {
   public async grantMoney(msg: Message): Promise<void> {
     const splitMsg = msg.content.split(/\s+/);
     if (splitMsg.length < 3) {
-      warnChannel(Messages.invalidCommandSyntax('!grantMoney @userMention $69.42'));
+      warnChannel(
+        Messages.invalidCommandSyntax('!grantMoney @userMention $69.42')
+      );
       return;
     }
 
@@ -43,7 +47,9 @@ class UserManager {
     try {
       toUser = await getUserFromMention(this._client, splitMsg[1]);
     } catch (err) {
-      warnChannel(Messages.invalidCommandSyntax('!grantMoney @userMention $69.42'));
+      warnChannel(
+        Messages.invalidCommandSyntax('!grantMoney @userMention $69.42')
+      );
       return;
     }
 
@@ -53,7 +59,9 @@ class UserManager {
     if (dollarAmount.includes('.')) {
       const decimalSplit = dollarAmount.split('.');
       if (decimalSplit.length > 2) {
-        warnChannel(Messages.invalidCommandSyntax('!sendMoney @userMention $69.42'));
+        warnChannel(
+          Messages.invalidCommandSyntax('!sendMoney @userMention $69.42')
+        );
         return;
       }
 
@@ -61,7 +69,9 @@ class UserManager {
 
       if (centAmount.length === 1) centAmount += '0';
       if (centAmount.length > 2) {
-        warnChannel(Messages.invalidCommandSyntax('!sendMoney @userMention $69.42'));
+        warnChannel(
+          Messages.invalidCommandSyntax('!sendMoney @userMention $69.42')
+        );
         return;
       }
 
@@ -80,16 +90,16 @@ class UserManager {
     }
 
     if (isNaN(totalAmount)) {
-      warnChannel(Messages.invalidCommandSyntax('!sendMoney @userMention $69.42'));
+      warnChannel(
+        Messages.invalidCommandSyntax('!sendMoney @userMention $69.42')
+      );
       return;
     }
-
-    console.log(totalAmount);
 
     try {
       this._db.grantFunds(toUser, totalAmount);
     } catch (err) {
-      // TODO: handle all failure cases, including re-creding the fromUser's account.
+      warnChannel(err);
     }
   }
 }

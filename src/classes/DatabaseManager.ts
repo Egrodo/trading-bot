@@ -1,14 +1,27 @@
 import { User, MessageEmbed } from 'discord.js';
-import Nano, { ServerScope, DocumentScope, DocumentInsertResponse, DocumentGetResponse } from 'nano';
+import Nano, {
+  ServerScope,
+  DocumentScope,
+  DocumentInsertResponse,
+  DocumentGetResponse,
+} from 'nano';
 import { dbUser, dbPass } from '../../auth.json';
 import OutgoingMessageHandler from './OutgoingMessageHandler';
 import { warnChannel, errorReportToCreator } from './ErrorReporter';
-import { formatAmountToReadable } from '../helpers';
+import helpers from '../helpers';
+const { formatAmountToReadable } = helpers;
 import Messages from '../static/messages';
 
 const DB_URL = `http://${dbUser}:${dbPass}@174.138.58.238:5984`;
 
-interface Trade {
+// Don't include a price attribute because it will fluctuate
+interface StockHolding {
+  ticker: string;
+  buyTimestamp: Date;
+  amountOwned: number;
+}
+
+interface PastTrade {
   ticker: string;
   timestamp: Date;
   price: string;
@@ -16,22 +29,12 @@ interface Trade {
   amountTraded: number;
 }
 
-interface MoneyTransfer {
-  sender: User;
-  recipient: User;
-  amount: number;
-  creationTimestamp: Date; // Transfers are only valid for 1 hour, if not accepted within that timeframe then is voided.
-  confirmedFromSender: boolean;
-  confirmedFromReceiver: boolean;
-}
-
-// TODO: Add "currentPortfolio" to type to store a users current holdings
 interface UserDocument {
   _id: string;
   _rev?: string;
   balance: number; // Total balance represented in cents
-  activeTransfers: MoneyTransfer[]; // Keeps track of any active transfers of money between two users
-  tradeHistory: Trade[];
+  tradeHistory: PastTrade[];
+  currentHoldings: StockHolding[];
   deleted: boolean;
 }
 
@@ -66,16 +69,27 @@ class DatabaseManager {
   public async removeUserAccount(user: User): Promise<void> {
     const userDocResult = await this.getUserDocument(user);
 
-    if (userDocResult?.userDoc.deleted === true || userDocResult?.error === 'deleted') {
+    if (
+      userDocResult?.userDoc.deleted === true ||
+      userDocResult?.error === 'deleted'
+    ) {
       warnChannel(Messages.noAccount);
       return;
     } else if (userDocResult?.error === 'failed') {
       warnChannel(Messages.failedToDelete);
-      errorReportToCreator('User document creation failed? ', userDocResult.error, user);
+      errorReportToCreator(
+        'User document creation failed? ',
+        userDocResult.error,
+        user
+      );
       return;
     }
 
-    const updatedUser = { ...userDocResult.userDoc, deleted: true };
+    const updatedUser = {
+      ...userDocResult.userDoc,
+      currentHoldings: [],
+      deleted: true,
+    };
 
     // Insert at the revision with the modified property to indicate that the account is "deleted".
     const result = await this._userDb.insert(updatedUser);
@@ -92,7 +106,11 @@ class DatabaseManager {
 
     if (userDocResult?.error === 'failed') {
       warnChannel(Messages.failedToDelete);
-      errorReportToCreator('User document creation failed? ', userDocResult, user);
+      errorReportToCreator(
+        'User document creation failed? ',
+        userDocResult,
+        user
+      );
       return;
     }
 
@@ -102,7 +120,7 @@ class DatabaseManager {
           _id: user.id,
           balance: 10000 * 100, // $1000.00 represented in cents
           tradeHistory: [],
-          activeTransfers: [],
+          currentHoldings: [],
           deleted: false,
         };
 
@@ -128,7 +146,9 @@ class DatabaseManager {
       const result = await this._userDb.insert(updatedUser);
       if (result.ok === true) {
         OutgoingMessageHandler.sendToTrading(
-          Messages.signupAgainSuccess(formatAmountToReadable(userDocResult.userDoc.balance)),
+          Messages.signupAgainSuccess(
+            formatAmountToReadable(userDocResult.userDoc.balance)
+          )
         );
       } else {
         warnChannel(Messages.signupFailure);
@@ -143,7 +163,10 @@ class DatabaseManager {
 
   public async getBalance(user: User): Promise<string> {
     const userDocResult = await this.getUserDocument(user);
-    if (userDocResult?.userDoc.deleted === true || userDocResult?.error === 'deleted') {
+    if (
+      userDocResult?.userDoc.deleted === true ||
+      userDocResult?.error === 'deleted'
+    ) {
       warnChannel(Messages.noAccount);
     } else if (userDocResult?.error === 'missing') {
       warnChannel(Messages.noAccount);
@@ -153,7 +176,10 @@ class DatabaseManager {
       return formatAmountToReadable(userDocResult.userDoc.balance);
     } else {
       warnChannel(Messages.failedToGetAccount);
-      errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
+      errorReportToCreator(
+        'UserDocResult returned unrecognized data?',
+        userDocResult
+      );
     }
   }
 
@@ -175,7 +201,10 @@ class DatabaseManager {
         return;
       } else {
         warnChannel(Messages.failedToGetAccount);
-        errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
+        errorReportToCreator(
+          'UserDocResult returned unrecognized data?',
+          userDocResult
+        );
         return;
       }
     }
@@ -194,8 +223,8 @@ class DatabaseManager {
         Messages.moneyGranted(
           toUser,
           formatAmountToReadable(grantAmount),
-          formatAmountToReadable(updatedUserDoc.balance),
-        ),
+          formatAmountToReadable(updatedUserDoc.balance)
+        )
       );
     } else {
       warnChannel(Messages.signupFailure);

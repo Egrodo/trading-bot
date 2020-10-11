@@ -28,12 +28,13 @@ const TradingMessageHandler_1 = __importDefault(require("./classes/TradingMessag
 const ErrorReporter_1 = require("./classes/ErrorReporter");
 const OutgoingMessageHandler_1 = require("./classes/OutgoingMessageHandler");
 const AUTH = __importStar(require("../auth.json"));
-const helpers_1 = require("./helpers");
+const helpers_1 = __importDefault(require("./helpers"));
+const { rateLimiter } = helpers_1.default;
 const COMMAND_COOLDOWN = 1.5 * 1000;
 exports.TRADING_SIM_CHANNEL_ID = '759562306417328148';
 const client = new discord_js_1.Client();
 function init() {
-    const limitedMessageHandler = helpers_1.RateLimiter(COMMAND_COOLDOWN, MessageRouter);
+    const limitedMessageHandler = rateLimiter(COMMAND_COOLDOWN, MessageRouter);
     client.on('message', limitedMessageHandler);
     ErrorReporter_1.init(client);
     OutgoingMessageHandler_1.init(client);

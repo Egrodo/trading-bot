@@ -12,7 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const helpers_1 = require("../helpers");
+const helpers_1 = __importDefault(require("../helpers"));
+const { getUserFromMention } = helpers_1.default;
 const DatabaseManager_1 = __importDefault(require("./DatabaseManager"));
 const OutgoingMessageHandler_1 = __importDefault(require("./OutgoingMessageHandler"));
 const ErrorReporter_1 = require("./ErrorReporter");
@@ -49,7 +50,7 @@ class UserManager {
             }
             let toUser;
             try {
-                toUser = yield helpers_1.getUserFromMention(this._client, splitMsg[1]);
+                toUser = yield getUserFromMention(this._client, splitMsg[1]);
             }
             catch (err) {
                 ErrorReporter_1.warnChannel(messages_1.default.invalidCommandSyntax('!grantMoney @userMention $69.42'));
@@ -88,11 +89,11 @@ class UserManager {
                 ErrorReporter_1.warnChannel(messages_1.default.invalidCommandSyntax('!sendMoney @userMention $69.42'));
                 return;
             }
-            console.log(totalAmount);
             try {
                 this._db.grantFunds(toUser, totalAmount);
             }
             catch (err) {
+                ErrorReporter_1.warnChannel(err);
             }
         });
     }

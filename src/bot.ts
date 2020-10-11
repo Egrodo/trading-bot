@@ -5,7 +5,8 @@ import { init as ErrorReporterInit } from './classes/ErrorReporter';
 import { init as OutgoingMessageHandlerInit } from './classes/OutgoingMessageHandler';
 import * as AUTH from '../auth.json';
 
-import { RateLimiter } from './helpers';
+import helpers from './helpers';
+const { rateLimiter } = helpers;
 
 // 1.5 second cooldown to limit spam
 const COMMAND_COOLDOWN = 1.5 * 1000;
@@ -14,7 +15,7 @@ export const TRADING_SIM_CHANNEL_ID = '759562306417328148';
 const client = new Client();
 
 function init() {
-  const limitedMessageHandler = RateLimiter(COMMAND_COOLDOWN, MessageRouter);
+  const limitedMessageHandler = rateLimiter(COMMAND_COOLDOWN, MessageRouter);
   client.on('message', limitedMessageHandler);
   ErrorReporterInit(client);
   OutgoingMessageHandlerInit(client);

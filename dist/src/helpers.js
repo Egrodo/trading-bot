@@ -9,61 +9,91 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserFromMention = exports.isUserAdminOrMod = exports.formatAmountToReadable = exports.isCommand = exports.RateLimiter = void 0;
+const discord_js_1 = require("discord.js");
 const SERVER_ID = '482608530105434112';
-function RateLimiter(delay, fn) {
-    const userMap = new Map();
-    return (msg) => {
-        if (msg.author.bot) {
+exports.default = {
+    rateLimiter: (delay, fn) => {
+        const userMap = new Map();
+        return (msg) => {
+            if (msg.author.bot) {
+                return;
+            }
+            if (userMap.has(msg.author.id)) {
+                clearTimeout(userMap.get(msg.author.id));
+            }
+            userMap.set(msg.author.id, setTimeout(() => {
+                fn(msg);
+                userMap.delete(msg.author.id);
+            }, delay));
+        };
+    },
+    isCommand: (msgContent, ...commandTypes) => {
+        const message = msgContent.trim();
+        if (message.charAt(0) === '$') {
+            const commandSubStr = message.split(/\s+/)[0];
+            const command = commandSubStr
+                .substring(1, message.length)
+                .trim()
+                .toLowerCase();
+            return commandTypes.includes(command);
+        }
+    },
+    formatAmountToReadable: (balance) => {
+        if (balance < 0) {
+            return `-$${Math.abs(balance / 100).toLocaleString()}`;
+        }
+        return `$${(balance / 100).toLocaleString()}`;
+    },
+    getUserFromMention: (client, mention) => {
+        if (!mention)
             return;
+        if (mention.startsWith('<@') && mention.endsWith('>')) {
+            mention = mention.slice(2, -1);
+            if (mention.startsWith('!')) {
+                mention = mention.slice(1);
+            }
+            return client.users.fetch(mention);
         }
-        if (userMap.has(msg.author.id)) {
-            clearTimeout(userMap.get(msg.author.id));
+        else if (!isNaN(Number(mention))) {
+            return client.users.fetch(mention);
         }
-        userMap.set(msg.author.id, setTimeout(() => {
-            fn(msg);
-            userMap.delete(msg.author.id);
-        }, delay));
-    };
-}
-exports.RateLimiter = RateLimiter;
-function isCommand(msgContent, commandType) {
-    const message = msgContent.trim();
-    if (message.charAt(0) === '!') {
-        const commandSubStr = message.split(/\s+/)[0];
-        return commandSubStr.substring(1, message.length).trim().toLowerCase() === commandType;
-    }
-}
-exports.isCommand = isCommand;
-function formatAmountToReadable(balance) {
-    if (balance < 0) {
-        return `-$${Math.abs(balance / 100).toLocaleString()}`;
-    }
-    return `$${(balance / 100).toLocaleString()}`;
-}
-exports.formatAmountToReadable = formatAmountToReadable;
-function getUserFromMention(client, mention) {
-    if (!mention)
-        return;
-    if (mention.startsWith('<@') && mention.endsWith('>')) {
-        mention = mention.slice(2, -1);
-        if (mention.startsWith('!')) {
-            mention = mention.slice(1);
-        }
-        return client.users.fetch(mention);
-    }
-    else if (!isNaN(Number(mention))) {
-        return client.users.fetch(mention);
-    }
-    return null;
-}
-exports.getUserFromMention = getUserFromMention;
-function isUserAdminOrMod(client, user) {
-    return __awaiter(this, void 0, void 0, function* () {
+        return null;
+    },
+    isUserAdminOrMod: (client, user) => __awaiter(void 0, void 0, void 0, function* () {
         const guild = yield client.guilds.fetch(SERVER_ID);
         const member = yield guild.members.fetch(user);
         return member.hasPermission('ADMINISTRATOR');
-    });
-}
-exports.isUserAdminOrMod = isUserAdminOrMod;
+    }),
+    composeHelpCommand: () => {
+        const message = new discord_js_1.MessageEmbed();
+        const commands = [
+            {
+                name: '$signup',
+                value: 'Use this to create a new account if you do not already have one',
+            },
+            {
+                name: '$deleteAccount',
+                value: "Deletes your account. Careful though, you'll lose all your stocks and your balance won't change if you recreate your account in the future.",
+            },
+            {
+                name: '$getCashBalance OR $balance OR $checkBalance',
+                value: 'Retrieves the current cash balance in your account',
+            },
+            {
+                name: '$help',
+                value: 'Shows this menu!',
+            },
+        ];
+        message
+            .setTitle('Bearcat Trading Game Commands')
+            .setDescription('Use these to interact with the Trading Bot and manage your portfolio')
+            .setColor('#823CD6')
+            .addFields({ name: '\u200B', value: '\u200B' }, ...commands, {
+            name: '\u200B',
+            value: '\u200B',
+        })
+            .setFooter('Anything missing or out of place? Message my creator, @egrodo#5991');
+        return message;
+    },
+};
 //# sourceMappingURL=helpers.js.map

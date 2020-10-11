@@ -16,7 +16,8 @@ const nano_1 = __importDefault(require("nano"));
 const auth_json_1 = require("../../auth.json");
 const OutgoingMessageHandler_1 = __importDefault(require("./OutgoingMessageHandler"));
 const ErrorReporter_1 = require("./ErrorReporter");
-const helpers_1 = require("../helpers");
+const helpers_1 = __importDefault(require("../helpers"));
+const { formatAmountToReadable } = helpers_1.default;
 const messages_1 = __importDefault(require("../static/messages"));
 const DB_URL = `http://${auth_json_1.dbUser}:${auth_json_1.dbPass}@174.138.58.238:5984`;
 class DatabaseManager {
@@ -43,7 +44,8 @@ class DatabaseManager {
     removeUserAccount(user) {
         return __awaiter(this, void 0, void 0, function* () {
             const userDocResult = yield this.getUserDocument(user);
-            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true || (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
+            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true ||
+                (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
                 ErrorReporter_1.warnChannel(messages_1.default.noAccount);
                 return;
             }
@@ -52,7 +54,7 @@ class DatabaseManager {
                 ErrorReporter_1.errorReportToCreator('User document creation failed? ', userDocResult.error, user);
                 return;
             }
-            const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { deleted: true });
+            const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { currentHoldings: [], deleted: true });
             const result = yield this._userDb.insert(updatedUser);
             if (result.ok) {
                 OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.deleteSuccess);
@@ -77,7 +79,7 @@ class DatabaseManager {
                         _id: user.id,
                         balance: 10000 * 100,
                         tradeHistory: [],
-                        activeTransfers: [],
+                        currentHoldings: [],
                         deleted: false,
                     };
                     const result = yield this._userDb.insert(NewUser);
@@ -99,7 +101,7 @@ class DatabaseManager {
                 const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { deleted: false });
                 const result = yield this._userDb.insert(updatedUser);
                 if (result.ok === true) {
-                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.signupAgainSuccess(helpers_1.formatAmountToReadable(userDocResult.userDoc.balance)));
+                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.signupAgainSuccess(formatAmountToReadable(userDocResult.userDoc.balance)));
                 }
                 else {
                     ErrorReporter_1.warnChannel(messages_1.default.signupFailure);
@@ -115,7 +117,8 @@ class DatabaseManager {
     getBalance(user) {
         return __awaiter(this, void 0, void 0, function* () {
             const userDocResult = yield this.getUserDocument(user);
-            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true || (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
+            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true ||
+                (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
                 ErrorReporter_1.warnChannel(messages_1.default.noAccount);
             }
             else if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'missing') {
@@ -125,7 +128,7 @@ class DatabaseManager {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
             }
             else if (userDocResult.userDoc) {
-                return helpers_1.formatAmountToReadable(userDocResult.userDoc.balance);
+                return formatAmountToReadable(userDocResult.userDoc.balance);
             }
             else {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
@@ -160,7 +163,7 @@ class DatabaseManager {
             const updatedUserDoc = Object.assign(Object.assign({}, toUserDoc), { balance: existingBalance + grantAmount });
             const result = yield this._userDb.insert(updatedUserDoc);
             if (result.ok === true) {
-                OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.moneyGranted(toUser, helpers_1.formatAmountToReadable(grantAmount), helpers_1.formatAmountToReadable(updatedUserDoc.balance)));
+                OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.moneyGranted(toUser, formatAmountToReadable(grantAmount), formatAmountToReadable(updatedUserDoc.balance)));
             }
             else {
                 ErrorReporter_1.warnChannel(messages_1.default.signupFailure);

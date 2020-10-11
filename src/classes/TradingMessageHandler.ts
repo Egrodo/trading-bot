@@ -1,9 +1,12 @@
 import { Message, Client, TextChannel } from 'discord.js';
-import { isCommand, isUserAdminOrMod } from '../helpers';
+import helpers from '../helpers';
 import UserManager from './UserManager';
 import { TRADING_SIM_CHANNEL_ID } from '../bot';
 import Messages from '../static/messages';
 import { warnChannel } from './ErrorReporter';
+import OutgoingMessageHandler from './OutgoingMessageHandler';
+
+const { isCommand, isUserAdminOrMod, composeHelpCommand } = helpers;
 
 class TradingMessageHandler {
   _client: Client;
@@ -25,25 +28,27 @@ class TradingMessageHandler {
     } else if (isCommand(content, 'deleteaccount')) {
       await this._userManager.deleteUserAccount(msg.author);
     } else if (
-      isCommand(content, 'checkbalance') ||
-      isCommand(content, 'balance') ||
-      isCommand(content, 'balancecheck') ||
-      isCommand(content, 'getbalance')
+      isCommand(
+        content,
+        'getcashbalance',
+        'checkbalance',
+        'balance',
+        'balancecheck',
+        'getbalance'
+      )
     ) {
       await this._userManager.checkBalance(msg.author);
     } else if (
-      isCommand(content, 'sendmoney') ||
-      isCommand(content, 'grantmoney') ||
-      isCommand(content, 'award') ||
-      isCommand(content, 'changebalance')
+      isCommand(content, 'sendmoney', 'grantmoney', 'award', 'changebalance')
     ) {
       const isAdmin = await isUserAdminOrMod(this._client, msg.author);
-      console.log(isAdmin);
       if (isAdmin) {
         await this._userManager.grantMoney(msg);
       } else {
         warnChannel(Messages.noPermission);
       }
+    } else if (isCommand(content, 'help', 'commands', 'manual')) {
+      OutgoingMessageHandler.sendToTrading(composeHelpCommand());
     }
   }
 }

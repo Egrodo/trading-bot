@@ -35,7 +35,10 @@ function errorReportToCreator(msg, ...errorInformation) {
         console.error(msg);
         console.error(errorInformation);
         const creator = yield client.users.fetch(CREATOR_ID);
-        const message = new discord_js_1.MessageEmbed().setColor('#ff0000').setTitle('Trading Bot Error Report').setDescription(msg);
+        const message = new discord_js_1.MessageEmbed()
+            .setColor('#ff0000')
+            .setTitle('Trading Bot Error Report')
+            .setDescription(msg);
         creator.send(message);
     });
 }
