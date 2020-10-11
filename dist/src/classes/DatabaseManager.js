@@ -14,8 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const nano_1 = __importDefault(require("nano"));
 const auth_json_1 = require("../../auth.json");
-const OutgoingMessageHandler_1 = __importDefault(require("./OutgoingMessageHandler"));
-const ErrorReporter_1 = require("./ErrorReporter");
+const OutgoingMessageHandler_1 = __importDefault(require("../stateful/OutgoingMessageHandler"));
+const ErrorReporter_1 = require("../stateful/ErrorReporter");
 const helpers_1 = __importDefault(require("../helpers"));
 const { formatAmountToReadable } = helpers_1.default;
 const messages_1 = __importDefault(require("../static/messages"));

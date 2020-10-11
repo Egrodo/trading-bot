@@ -16,9 +16,10 @@ const helpers_1 = __importDefault(require("../helpers"));
 const UserManager_1 = __importDefault(require("./UserManager"));
 const bot_1 = require("../bot");
 const messages_1 = __importDefault(require("../static/messages"));
-const ErrorReporter_1 = require("./ErrorReporter");
-const OutgoingMessageHandler_1 = __importDefault(require("./OutgoingMessageHandler"));
-const { isCommand, isUserAdminOrMod, composeHelpCommand } = helpers_1.default;
+const ErrorReporter_1 = require("../stateful/ErrorReporter");
+const IEXCloudApis_1 = __importDefault(require("../stateful/IEXCloudApis"));
+const OutgoingMessageHandler_1 = __importDefault(require("../stateful/OutgoingMessageHandler"));
+const { isCommand, isUserAdminOrMod, composeHelpCommand, composePriceCheckMessage, } = helpers_1.default;
 class TradingMessageHandler {
     constructor(client) {
         this._userManager = new UserManager_1.default(client);
@@ -50,6 +51,32 @@ class TradingMessageHandler {
             }
             else if (isCommand(content, 'help', 'commands', 'manual')) {
                 OutgoingMessageHandler_1.default.sendToTrading(composeHelpCommand());
+            }
+            else if (isCommand(content, 'p', 'pricecheck', 'price')) {
+                let ticker = content.split(' ');
+                try {
+                    if (ticker.length !== 2) {
+                        ErrorReporter_1.warnChannel(messages_1.default.invalidCommandSyntax('$p TSLA'));
+                        return;
+                    }
+                    ticker = ticker[1];
+                    if (ticker[0] === '$')
+                        ticker = ticker.substring(1, ticker.length);
+                    if (!ticker.match(/[A-z]/i)) {
+                        ErrorReporter_1.warnChannel(messages_1.default.invalidStockTicker);
+                        return;
+                    }
+                    const priceReturn = yield IEXCloudApis_1.default.getPrice(ticker);
+                    if (priceReturn.hasOwnProperty('error')) {
+                        ErrorReporter_1.warnChannel(priceReturn.reason);
+                        return;
+                    }
+                    const { price, companyName, priceChange, percentChange } = priceReturn;
+                    OutgoingMessageHandler_1.default.sendToTrading(composePriceCheckMessage(ticker, price, companyName, priceChange, percentChange));
+                }
+                catch (err) {
+                    ErrorReporter_1.warnChannel(err);
+                }
             }
         });
     }

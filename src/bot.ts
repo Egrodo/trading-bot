@@ -1,8 +1,9 @@
 import { Client, Message } from 'discord.js';
 
 import TradingMessageHandler from './classes/TradingMessageHandler';
-import { init as ErrorReporterInit } from './classes/ErrorReporter';
-import { init as OutgoingMessageHandlerInit } from './classes/OutgoingMessageHandler';
+import { init as ErrorReporterInit } from './stateful/ErrorReporter';
+import { init as OutgoingMessageHandlerInit } from './stateful/OutgoingMessageHandler';
+import { init as IEXCloudApisInit } from './stateful/IEXCloudApis';
 import * as AUTH from '../auth.json';
 
 import helpers from './helpers';
@@ -19,6 +20,7 @@ function init() {
   client.on('message', limitedMessageHandler);
   ErrorReporterInit(client);
   OutgoingMessageHandlerInit(client);
+  IEXCloudApisInit(AUTH.iexKey);
 }
 
 // Handles the direction of messages into their respective handler class

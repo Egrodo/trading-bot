@@ -6,8 +6,8 @@ import Nano, {
   DocumentGetResponse,
 } from 'nano';
 import { dbUser, dbPass } from '../../auth.json';
-import OutgoingMessageHandler from './OutgoingMessageHandler';
-import { warnChannel, errorReportToCreator } from './ErrorReporter';
+import OutgoingMessageHandler from '../stateful/OutgoingMessageHandler';
+import { warnChannel, errorReportToCreator } from '../stateful/ErrorReporter';
 import helpers from '../helpers';
 const { formatAmountToReadable } = helpers;
 import Messages from '../static/messages';

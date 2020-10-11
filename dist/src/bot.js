@@ -25,8 +25,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TRADING_SIM_CHANNEL_ID = void 0;
 const discord_js_1 = require("discord.js");
 const TradingMessageHandler_1 = __importDefault(require("./classes/TradingMessageHandler"));
-const ErrorReporter_1 = require("./classes/ErrorReporter");
-const OutgoingMessageHandler_1 = require("./classes/OutgoingMessageHandler");
+const ErrorReporter_1 = require("./stateful/ErrorReporter");
+const OutgoingMessageHandler_1 = require("./stateful/OutgoingMessageHandler");
+const IEXCloudApis_1 = require("./stateful/IEXCloudApis");
 const AUTH = __importStar(require("../auth.json"));
 const helpers_1 = __importDefault(require("./helpers"));
 const { rateLimiter } = helpers_1.default;
@@ -38,6 +39,7 @@ function init() {
     client.on('message', limitedMessageHandler);
     ErrorReporter_1.init(client);
     OutgoingMessageHandler_1.init(client);
+    IEXCloudApis_1.init(AUTH.iexKey);
 }
 function MessageRouter(msg) {
     var _a;

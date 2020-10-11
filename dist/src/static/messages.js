@@ -14,7 +14,9 @@ const messages = {
     invalidCommandSyntax: (properSyntax) => `Invalid syntax, type your command like this: \n\`${properSyntax}\``,
     notEnoughMoney: (balance) => `Sorry, you don't have enough money in your account for this operation. ${messages.checkBalance(balance)}`,
     moneyGranted: (user, amount, balance) => `Congrats ${user}, you've been granted ${amount}. ${messages.checkBalance(balance)}`,
-    noPermission: `You do not have permission to complete that operation`,
+    noPermission: `You do not have permission to complete that operation.`,
+    invalidStockTicker: `Invalid stock ticker, stock not found.`,
+    failedToGetStockPrice: `Failed to get stock price. I'll PM my creator to report this :(`,
 };
 exports.default = Object.assign({}, messages);
 //# sourceMappingURL=messages.js.map

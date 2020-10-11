@@ -21,7 +21,9 @@ const messages = {
     `Congrats ${user}, you've been granted ${amount}. ${messages.checkBalance(
       balance
     )}`,
-  noPermission: `You do not have permission to complete that operation`,
+  noPermission: `You do not have permission to complete that operation.`,
+  invalidStockTicker: `Invalid stock ticker, stock not found.`,
+  failedToGetStockPrice: `Failed to get stock price. I'll PM my creator to report this :(`,
 };
 
 export default { ...messages };

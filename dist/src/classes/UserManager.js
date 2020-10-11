@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const helpers_1 = __importDefault(require("../helpers"));
 const { getUserFromMention } = helpers_1.default;
 const DatabaseManager_1 = __importDefault(require("./DatabaseManager"));
-const OutgoingMessageHandler_1 = __importDefault(require("./OutgoingMessageHandler"));
-const ErrorReporter_1 = require("./ErrorReporter");
+const OutgoingMessageHandler_1 = __importDefault(require("../stateful/OutgoingMessageHandler"));
+const ErrorReporter_1 = require("../stateful/ErrorReporter");
 const messages_1 = __importDefault(require("../static/messages"));
 class UserManager {
     constructor(client) {

@@ -3,8 +3,8 @@ import { Message, User, Client } from 'discord.js';
 import helpers from '../helpers';
 const { getUserFromMention } = helpers;
 import DatabaseManager from './DatabaseManager';
-import OutgoingMessageHandler from './OutgoingMessageHandler';
-import { warnChannel } from './ErrorReporter';
+import OutgoingMessageHandler from '../stateful/OutgoingMessageHandler';
+import { warnChannel } from '../stateful/ErrorReporter';
 
 import Messages from '../static/messages';
 

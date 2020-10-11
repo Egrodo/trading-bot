@@ -5,8 +5,10 @@
   "source": "src/bot.ts",
   "license": "MIT",
   "dependencies": {
+    "@types/node-fetch": "^2.5.7",
     "discord.js": "^12.3.1",
-    "nano": "^8.2.2"
+    "nano": "^8.2.2",
+    "node-fetch": "^2.6.1"
   },
   "devDependencies": {
     "@types/node": "^13.5.0",

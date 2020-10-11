@@ -76,12 +76,16 @@ exports.default = {
                 value: "Deletes your account. Careful though, you'll lose all your stocks and your balance won't change if you recreate your account in the future.",
             },
             {
-                name: '$getCashBalance OR $balance OR $checkBalance',
+                name: '$getCashBalance \\|| $balance |\\| $checkBalance',
                 value: 'Retrieves the current cash balance in your account',
             },
             {
                 name: '$help',
                 value: 'Shows this menu!',
+            },
+            {
+                name: '$priceCheck TICKER || $p TICKER',
+                value: 'Checks the real-time price of a stock by ticker. Example: "$priceCheck TSLA" or "$p $FB".',
             },
         ];
         message
@@ -93,6 +97,28 @@ exports.default = {
             value: '\u200B',
         })
             .setFooter('Anything missing or out of place? Message my creator, @egrodo#5991');
+        return message;
+    },
+    composePriceCheckMessage: (ticker, price, companyName, priceChange, percentChange) => {
+        const message = new discord_js_1.MessageEmbed();
+        if (priceChange < 0) {
+            message.setColor('#ff0033');
+        }
+        else if (priceChange > 0) {
+            message.setColor('#00ce00');
+        }
+        else
+            message.setColor('#823CD6');
+        if (companyName)
+            message.addField('Company:', companyName);
+        if (!companyName && ticker)
+            message.addField('Company:', ticker);
+        if (price)
+            message.addField('Price:', `$${price}`);
+        if (priceChange)
+            message.addField('Price Change Today:', `$${priceChange}`);
+        if (percentChange)
+            message.addField('Percent Change Today:', `${percentChange * 100}%`);
         return message;
     },
 };
