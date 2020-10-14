@@ -44,7 +44,7 @@ exports.default = {
         }
         catch (err) {
             ErrorReporter_1.warnChannel(messages_1.default.failedToGetStockPrice);
-            ErrorReporter_1.errorReportToCreator('getPrice failed but unrecognized error?', stock, err);
+            ErrorReporter_1.errorReportToCreator('getPrice failed but unrecognized error? See console', stock, err);
             return { error: 500, reason: 'unknown' };
         }
     }),

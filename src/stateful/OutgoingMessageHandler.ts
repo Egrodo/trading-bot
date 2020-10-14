@@ -6,12 +6,13 @@ export function init(c: Client) {
   client = c;
 }
 
-export async function sendToTrading(msg: string | MessageEmbed) {
+export async function sendToTrading(...msgs: (string | MessageEmbed)[]) {
   // @ts-expect-error
   const tradingChannel: TextChannel = await client.channels.fetch(
     TRADING_SIM_CHANNEL_ID
   );
-  tradingChannel.send(msg);
+
+  msgs.forEach((msg) => tradingChannel.send(msg));
 }
 
 export default { sendToTrading };

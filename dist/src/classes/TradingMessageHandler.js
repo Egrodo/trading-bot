@@ -19,7 +19,7 @@ const messages_1 = __importDefault(require("../static/messages"));
 const ErrorReporter_1 = require("../stateful/ErrorReporter");
 const IEXCloudApis_1 = __importDefault(require("../stateful/IEXCloudApis"));
 const OutgoingMessageHandler_1 = __importDefault(require("../stateful/OutgoingMessageHandler"));
-const { isCommand, isUserAdminOrMod, composeHelpCommand, composePriceCheckMessage, } = helpers_1.default;
+const { isCommand, isUserAdminOrMod, composeHelpCommand, composePriceCheckMessage, parseTickerFromMsg, formatAmountToReadable, } = helpers_1.default;
 class TradingMessageHandler {
     constructor(client) {
         this._userManager = new UserManager_1.default(client);
@@ -37,10 +37,13 @@ class TradingMessageHandler {
             else if (isCommand(content, 'deleteaccount')) {
                 yield this._userManager.deleteUserAccount(msg.author);
             }
-            else if (isCommand(content, 'getcashbalance', 'checkbalance', 'balance', 'balancecheck', 'getbalance')) {
-                yield this._userManager.checkBalance(msg.author);
+            else if (isCommand(content, 'getcashbalance', 'checkbalance', 'balance', 'cb', 'getbalance')) {
+                const balance = yield this._userManager.getBalance(msg.author);
+                if (balance != null) {
+                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.checkBalance(formatAmountToReadable(balance), msg.author));
+                }
             }
-            else if (isCommand(content, 'sendmoney', 'grantmoney', 'award', 'changebalance')) {
+            else if (isCommand(content, 'sendmoney', 'grantmoney', 'award', 'grant')) {
                 const isAdmin = yield isUserAdminOrMod(this._client, msg.author);
                 if (isAdmin) {
                     yield this._userManager.grantMoney(msg);
@@ -53,19 +56,12 @@ class TradingMessageHandler {
                 OutgoingMessageHandler_1.default.sendToTrading(composeHelpCommand());
             }
             else if (isCommand(content, 'p', 'pricecheck', 'price')) {
-                let ticker = content.split(' ');
+                const ticker = parseTickerFromMsg(content);
+                if (!ticker) {
+                    ErrorReporter_1.warnChannel(messages_1.default.invalidCommandSyntax('$p TSLA'));
+                    return;
+                }
                 try {
-                    if (ticker.length !== 2) {
-                        ErrorReporter_1.warnChannel(messages_1.default.invalidCommandSyntax('$p TSLA'));
-                        return;
-                    }
-                    ticker = ticker[1];
-                    if (ticker[0] === '$')
-                        ticker = ticker.substring(1, ticker.length);
-                    if (!ticker.match(/[A-z]/i)) {
-                        ErrorReporter_1.warnChannel(messages_1.default.invalidStockTicker);
-                        return;
-                    }
                     const priceReturn = yield IEXCloudApis_1.default.getPrice(ticker);
                     if (priceReturn.hasOwnProperty('error')) {
                         ErrorReporter_1.warnChannel(priceReturn.reason);
@@ -77,6 +73,29 @@ class TradingMessageHandler {
                 catch (err) {
                     ErrorReporter_1.warnChannel(err);
                 }
+            }
+            else if (isCommand(content, 'buy')) {
+                const ticker = parseTickerFromMsg(content);
+                const desiredStockUnits = Number(content.split(' ')[2]);
+                if (!ticker || Number.isNaN(desiredStockUnits)) {
+                    ErrorReporter_1.warnChannel(messages_1.default.invalidCommandSyntax('$buy AMD 100'));
+                    return;
+                }
+                const priceReturn = yield IEXCloudApis_1.default.getPrice(ticker);
+                if (priceReturn.hasOwnProperty('error')) {
+                    ErrorReporter_1.warnChannel(priceReturn.reason);
+                    return;
+                }
+                const { price } = priceReturn;
+                const requiredAmount = desiredStockUnits * price;
+                const usersBalance = yield this._userManager.getBalance(msg.author);
+                if (usersBalance < requiredAmount) {
+                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.notEnoughMoneyForBuy(formatAmountToReadable(usersBalance), ticker.toUpperCase(), formatAmountToReadable(price), formatAmountToReadable(requiredAmount)));
+                    return;
+                }
+                const newBalance = yield this._userManager.decreaseBalance(msg.author, requiredAmount);
+                console.log(newBalance);
+                console.log(`Buying ${ticker} ${desiredStockUnits}`);
             }
         });
     }

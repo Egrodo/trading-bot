@@ -16,10 +16,10 @@ function init(c) {
     client = c;
 }
 exports.init = init;
-function sendToTrading(msg) {
+function sendToTrading(...msgs) {
     return __awaiter(this, void 0, void 0, function* () {
         const tradingChannel = yield client.channels.fetch(bot_1.TRADING_SIM_CHANNEL_ID);
-        tradingChannel.send(msg);
+        msgs.forEach((msg) => tradingChannel.send(msg));
     });
 }
 exports.sendToTrading = sendToTrading;

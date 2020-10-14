@@ -121,5 +121,16 @@ exports.default = {
             message.addField('Percent Change Today:', `${percentChange * 100}%`);
         return message;
     },
+    parseTickerFromMsg: (msgContent) => {
+        const tickerArr = msgContent.split(' ');
+        if (tickerArr.length < 2)
+            return '';
+        let ticker = tickerArr[1];
+        if (ticker[0] === '$')
+            ticker = ticker.substring(1, ticker.length);
+        if (!ticker.match(/[A-z]/i))
+            return '';
+        return ticker;
+    },
 };
 //# sourceMappingURL=helpers.js.map

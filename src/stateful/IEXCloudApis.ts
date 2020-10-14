@@ -68,7 +68,7 @@ export default {
     } catch (err) {
       warnChannel(Messages.failedToGetStockPrice);
       errorReportToCreator(
-        'getPrice failed but unrecognized error?',
+        'getPrice failed but unrecognized error? See console',
         stock,
         err
       );

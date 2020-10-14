@@ -15,6 +15,8 @@ const {
   isUserAdminOrMod,
   composeHelpCommand,
   composePriceCheckMessage,
+  parseTickerFromMsg,
+  formatAmountToReadable,
 } = helpers;
 
 class TradingMessageHandler {
@@ -42,14 +44,20 @@ class TradingMessageHandler {
         'getcashbalance',
         'checkbalance',
         'balance',
-        'balancecheck',
+        'cb',
         'getbalance'
       )
     ) {
-      await this._userManager.checkBalance(msg.author);
+      const balance = await this._userManager.getBalance(msg.author);
+      if (balance != null) {
+        OutgoingMessageHandler.sendToTrading(
+          Messages.checkBalance(formatAmountToReadable(balance), msg.author)
+        );
+      }
     } else if (
-      isCommand(content, 'sendmoney', 'grantmoney', 'award', 'changebalance')
+      isCommand(content, 'sendmoney', 'grantmoney', 'award', 'grant')
     ) {
+      // TODO: Move the command logic to here from user manager.
       const isAdmin = await isUserAdminOrMod(this._client, msg.author);
       if (isAdmin) {
         await this._userManager.grantMoney(msg);
@@ -59,19 +67,12 @@ class TradingMessageHandler {
     } else if (isCommand(content, 'help', 'commands', 'manual')) {
       OutgoingMessageHandler.sendToTrading(composeHelpCommand());
     } else if (isCommand(content, 'p', 'pricecheck', 'price')) {
-      let ticker: string | string[] = content.split(' ');
+      const ticker = parseTickerFromMsg(content);
+      if (!ticker) {
+        warnChannel(Messages.invalidCommandSyntax('$p TSLA'));
+        return;
+      }
       try {
-        if (ticker.length !== 2) {
-          warnChannel(Messages.invalidCommandSyntax('$p TSLA'));
-          return;
-        }
-        ticker = ticker[1];
-        if (ticker[0] === '$') ticker = ticker.substring(1, ticker.length);
-        if (!ticker.match(/[A-z]/i)) {
-          warnChannel(Messages.invalidStockTicker);
-          return;
-        }
-
         const priceReturn = await IEXCloudApis.getPrice(ticker);
         if (priceReturn.hasOwnProperty('error')) {
           warnChannel((<ErrorType>priceReturn).reason);
@@ -93,7 +94,50 @@ class TradingMessageHandler {
       } catch (err) {
         warnChannel(err);
       }
+    } else if (isCommand(content, 'buy')) {
+      const ticker = parseTickerFromMsg(content);
+      const desiredStockUnits = Number(content.split(' ')[2]);
+      if (!ticker || Number.isNaN(desiredStockUnits)) {
+        warnChannel(Messages.invalidCommandSyntax('$buy AMD 100'));
+        return;
+      }
+
+      const priceReturn = await IEXCloudApis.getPrice(ticker);
+      if (priceReturn.hasOwnProperty('error')) {
+        warnChannel((<ErrorType>priceReturn).reason);
+        return;
+      }
+
+      const { price } = <GetPriceReturnType>priceReturn;
+
+      const requiredAmount = desiredStockUnits * price;
+      const usersBalance = await this._userManager.getBalance(msg.author);
+
+      if (usersBalance < requiredAmount) {
+        OutgoingMessageHandler.sendToTrading(
+          Messages.notEnoughMoneyForBuy(
+            formatAmountToReadable(usersBalance),
+            ticker.toUpperCase(),
+            formatAmountToReadable(price),
+            formatAmountToReadable(requiredAmount)
+          )
+        );
+        return;
+      }
+
+      // Remove the amount from the users balance
+      const newBalance = await this._userManager.decreaseBalance(
+        msg.author,
+        requiredAmount
+      );
+
+      console.log(newBalance);
+      // TODO: Upon successful completion of aforementioned, add stocks to users account.
+
+      console.log(`Buying ${ticker} ${desiredStockUnits}`);
     }
+
+    // TODO: Add command to get total value of users account.
   }
 }
 

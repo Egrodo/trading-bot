@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const helpers_1 = __importDefault(require("../helpers"));
-const { getUserFromMention } = helpers_1.default;
+const { getUserFromMention, formatAmountToReadable } = helpers_1.default;
 const DatabaseManager_1 = __importDefault(require("./DatabaseManager"));
 const OutgoingMessageHandler_1 = __importDefault(require("../stateful/OutgoingMessageHandler"));
 const ErrorReporter_1 = require("../stateful/ErrorReporter");
@@ -33,12 +33,9 @@ class UserManager {
             yield this._db.createNewUser(msg.author);
         });
     }
-    checkBalance(user) {
+    getBalance(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            const balance = yield this._db.getBalance(user);
-            if (balance != null) {
-                OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.checkBalance(balance));
-            }
+            return this._db.getBalance(user);
         });
     }
     grantMoney(msg) {
@@ -85,15 +82,37 @@ class UserManager {
             else {
                 totalAmount = Number(dollarAmount) * 100 + Number(centAmount);
             }
-            if (isNaN(totalAmount)) {
+            if (Number.isNaN(totalAmount) || totalAmount < 0) {
                 ErrorReporter_1.warnChannel(messages_1.default.invalidCommandSyntax('!sendMoney @userMention $69.42'));
                 return;
             }
             try {
-                this._db.grantFunds(toUser, totalAmount);
+                const success = yield this._db.increaseUserBalance(toUser, totalAmount);
+                if (success) {
+                    const newAmount = yield this._db.getBalance(toUser);
+                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.moneyGranted(toUser, formatAmountToReadable(totalAmount), formatAmountToReadable(newAmount)));
+                }
             }
             catch (err) {
                 ErrorReporter_1.warnChannel(err);
+            }
+        });
+    }
+    increaseBalance(user, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const success = yield this._db.increaseUserBalance(user, amount);
+            if (success) {
+                const newAmount = yield this._db.getBalance(user);
+                return newAmount;
+            }
+        });
+    }
+    decreaseBalance(user, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const success = yield this._db.decreaseUserBalance(user, amount);
+            if (success) {
+                const newAmount = yield this._db.getBalance(user);
+                return newAmount;
             }
         });
     }

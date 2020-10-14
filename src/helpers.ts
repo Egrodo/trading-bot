@@ -140,4 +140,15 @@ export default {
 
     return message;
   },
+
+  // Parses the second argument of message content to be a stock ticker
+  parseTickerFromMsg: (msgContent: string): string => {
+    const tickerArr = msgContent.split(' ');
+    if (tickerArr.length < 2) return '';
+    let ticker = tickerArr[1];
+    if (ticker[0] === '$') ticker = ticker.substring(1, ticker.length);
+    if (!ticker.match(/[A-z]/i)) return '';
+
+    return ticker;
+  },
 };

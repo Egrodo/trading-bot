@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/src/bot.js",
-    "start:watch": "nodemon -e ts --exec \"npm run build && npm start\""
+    "start:dev": "node --inspect dist/src/bot.js",
+    "start:watch": "nodemon -e ts --exec \"yarn run build && yarn start\""
   }
 }

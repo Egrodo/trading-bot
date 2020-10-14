@@ -1,10 +1,5 @@
-import { User, MessageEmbed } from 'discord.js';
-import Nano, {
-  ServerScope,
-  DocumentScope,
-  DocumentInsertResponse,
-  DocumentGetResponse,
-} from 'nano';
+import { User } from 'discord.js';
+import Nano, { ServerScope, DocumentScope, DocumentGetResponse } from 'nano';
 import { dbUser, dbPass } from '../../auth.json';
 import OutgoingMessageHandler from '../stateful/OutgoingMessageHandler';
 import { warnChannel, errorReportToCreator } from '../stateful/ErrorReporter';
@@ -64,6 +59,51 @@ class DatabaseManager {
       response.error = err.reason;
     }
     return response;
+  }
+
+  // INTERNAL ONLY - modify the users balance directly by passing ina positive or negative number.
+  private async _modifyBalance(toUser: User, newBalance: number) {
+    // Get toUser doc
+    let userDocResult: UserDocReturnType;
+    try {
+      userDocResult = await this.getUserDocument(toUser);
+    } catch (err) {
+      console.log('ERROR');
+      console.log(err);
+      return;
+    }
+
+    if (userDocResult?.error) {
+      if (userDocResult?.error === 'missing') {
+        warnChannel(Messages.noAccountForUser(toUser.username));
+        return;
+      } else {
+        warnChannel(Messages.failedToGetAccount);
+        errorReportToCreator(
+          'UserDocResult returned unrecognized data?',
+          userDocResult
+        );
+        return;
+      }
+    }
+
+    const updatedUserDoc = {
+      ...userDocResult.userDoc,
+      balance: newBalance,
+    };
+
+    const result = await this._userDb.insert(updatedUserDoc);
+    if (result.ok === true) {
+      return true;
+    } else {
+      warnChannel(Messages.failedToGetAccount);
+      errorReportToCreator(
+        'User document update failed? ',
+        result,
+        userDocResult.userDoc
+      );
+      return false;
+    }
   }
 
   public async removeUserAccount(user: User): Promise<void> {
@@ -161,7 +201,7 @@ class DatabaseManager {
     }
   }
 
-  public async getBalance(user: User): Promise<string> {
+  public async getBalance(user: User): Promise<number> {
     const userDocResult = await this.getUserDocument(user);
     if (
       userDocResult?.userDoc.deleted === true ||
@@ -173,7 +213,7 @@ class DatabaseManager {
     } else if (userDocResult?.error === 'failed') {
       warnChannel(Messages.failedToGetAccount);
     } else if (userDocResult.userDoc) {
-      return formatAmountToReadable(userDocResult.userDoc.balance);
+      return userDocResult.userDoc.balance;
     } else {
       warnChannel(Messages.failedToGetAccount);
       errorReportToCreator(
@@ -183,53 +223,28 @@ class DatabaseManager {
     }
   }
 
-  // ADMIN ONLY -- Magically makes money appear in the users account.
-  public async grantFunds(toUser: User, grantAmount: number) {
-    // Get toUser doc
-    let userDocResult: UserDocReturnType;
-    try {
-      userDocResult = await this.getUserDocument(toUser);
-    } catch (err) {
-      console.log('ERROR');
-      console.log(err);
-      return;
+  public async increaseUserBalance(
+    user: User,
+    amount: number
+  ): Promise<boolean> {
+    const userBalance = await this.getBalance(user);
+    const newBalance = userBalance + amount;
+    if (!Number.isNaN(newBalance)) {
+      return this._modifyBalance(user, newBalance);
     }
+    return false;
+  }
 
-    if (userDocResult?.error) {
-      if (userDocResult?.error === 'missing') {
-        warnChannel(Messages.noAccountForUser(toUser.username));
-        return;
-      } else {
-        warnChannel(Messages.failedToGetAccount);
-        errorReportToCreator(
-          'UserDocResult returned unrecognized data?',
-          userDocResult
-        );
-        return;
-      }
+  public async decreaseUserBalance(
+    user: User,
+    amount: number
+  ): Promise<boolean> {
+    const userBalance = await this.getBalance(user);
+    const newBalance = userBalance - amount;
+    if (!Number.isNaN(newBalance)) {
+      return this._modifyBalance(user, newBalance);
     }
-
-    const toUserDoc = userDocResult.userDoc;
-
-    const existingBalance = toUserDoc.balance;
-    const updatedUserDoc = {
-      ...toUserDoc,
-      balance: existingBalance + grantAmount,
-    };
-
-    const result = await this._userDb.insert(updatedUserDoc);
-    if (result.ok === true) {
-      OutgoingMessageHandler.sendToTrading(
-        Messages.moneyGranted(
-          toUser,
-          formatAmountToReadable(grantAmount),
-          formatAmountToReadable(updatedUserDoc.balance)
-        )
-      );
-    } else {
-      warnChannel(Messages.signupFailure);
-      errorReportToCreator('User document update failed? ', result, toUserDoc);
-    }
+    return false;
   }
 }
 
