@@ -2,7 +2,7 @@ import { Message, User, Client } from 'discord.js';
 
 import helpers from '../helpers';
 const { getUserFromMention, formatAmountToReadable } = helpers;
-import DatabaseManager from './DatabaseManager';
+import DatabaseManager, { CurrentHoldings } from './DatabaseManager';
 import OutgoingMessageHandler from '../stateful/OutgoingMessageHandler';
 import { warnChannel, errorReportToCreator } from '../stateful/ErrorReporter';
 
@@ -124,6 +124,22 @@ class UserManager {
       const newAmount = await this._db.getBalance(user);
       return newAmount;
     }
+  }
+
+  public async addStocks(
+    user: User,
+    ticker: string,
+    buyPrice: number,
+    companyName: string,
+    amount: number
+  ): Promise<CurrentHoldings> {
+    return this._db.addStocksToUserAccount(
+      user,
+      ticker,
+      buyPrice,
+      companyName,
+      amount
+    );
   }
 }
 

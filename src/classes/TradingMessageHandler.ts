@@ -3,7 +3,7 @@ import helpers from '../helpers';
 import UserManager from './UserManager';
 import { TRADING_SIM_CHANNEL_ID } from '../bot';
 import Messages from '../static/messages';
-import { warnChannel } from '../stateful/ErrorReporter';
+import { warnChannel, errorReportToCreator } from '../stateful/ErrorReporter';
 import IEXCloudApis, {
   GetPriceReturnType,
   ErrorType,
@@ -108,7 +108,7 @@ class TradingMessageHandler {
         return;
       }
 
-      const { price } = <GetPriceReturnType>priceReturn;
+      const { price, companyName } = <GetPriceReturnType>priceReturn;
 
       const requiredAmount = desiredStockUnits * price;
       const usersBalance = await this._userManager.getBalance(msg.author);
@@ -131,8 +131,28 @@ class TradingMessageHandler {
         requiredAmount
       );
 
-      console.log(newBalance);
-      // TODO: Upon successful completion of aforementioned, add stocks to users account.
+      if (Number.isNaN(newBalance) || newBalance < 0) {
+        warnChannel(Messages.failedToGetAccount);
+        errorReportToCreator(
+          'this._userManager.decreaseBalance returned invalid number?',
+          newBalance,
+          desiredStockUnits,
+          price,
+          requiredAmount
+        );
+        return;
+      }
+
+      const portfolio = await this._userManager.addStocks(
+        msg.author,
+        ticker,
+        price,
+        companyName,
+        desiredStockUnits
+      );
+
+      // TODO: Output this
+      console.log(portfolio);
 
       console.log(`Buying ${ticker} ${desiredStockUnits}`);
     }

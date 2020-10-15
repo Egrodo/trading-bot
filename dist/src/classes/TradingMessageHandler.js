@@ -86,7 +86,7 @@ class TradingMessageHandler {
                     ErrorReporter_1.warnChannel(priceReturn.reason);
                     return;
                 }
-                const { price } = priceReturn;
+                const { price, companyName } = priceReturn;
                 const requiredAmount = desiredStockUnits * price;
                 const usersBalance = yield this._userManager.getBalance(msg.author);
                 if (usersBalance < requiredAmount) {
@@ -94,7 +94,13 @@ class TradingMessageHandler {
                     return;
                 }
                 const newBalance = yield this._userManager.decreaseBalance(msg.author, requiredAmount);
-                console.log(newBalance);
+                if (Number.isNaN(newBalance) || newBalance < 0) {
+                    ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+                    ErrorReporter_1.errorReportToCreator('this._userManager.decreaseBalance returned invalid number?', newBalance, desiredStockUnits, price, requiredAmount);
+                    return;
+                }
+                const portfolio = yield this._userManager.addStocks(msg.author, ticker, price, companyName, desiredStockUnits);
+                console.log(portfolio);
                 console.log(`Buying ${ticker} ${desiredStockUnits}`);
             }
         });

@@ -112,8 +112,7 @@ class DatabaseManager {
                     const NewUser = {
                         _id: user.id,
                         balance: 10000 * 100,
-                        tradeHistory: [],
-                        currentHoldings: [],
+                        currentHoldings: {},
                         deleted: false,
                     };
                     const result = yield this._userDb.insert(NewUser);
@@ -188,6 +187,57 @@ class DatabaseManager {
                 return this._modifyBalance(user, newBalance);
             }
             return false;
+        });
+    }
+    addStocksToUserAccount(user, ticker, buyPrice, companyName, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let userDocResult;
+            try {
+                userDocResult = yield this.getUserDocument(user);
+            }
+            catch (err) {
+                console.log('ERROR');
+                console.log(err);
+                return;
+            }
+            if (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) {
+                if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'missing') {
+                    ErrorReporter_1.warnChannel(messages_1.default.noAccountForUser(user.username));
+                    return;
+                }
+                else {
+                    ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+                    ErrorReporter_1.errorReportToCreator('UserDocResult returned unrecognized data?', userDocResult);
+                    return;
+                }
+            }
+            const { currentHoldings } = userDocResult.userDoc;
+            const newTrade = {
+                ticker,
+                price: buyPrice,
+                amountTraded: amount,
+                timestamp: Date.now(),
+                transactionType: 'buy',
+            };
+            let pastHolding = currentHoldings[ticker];
+            const pastTradeHistory = (pastHolding === null || pastHolding === void 0 ? void 0 : pastHolding.tradeHistory) || [];
+            const newAmount = (pastHolding === null || pastHolding === void 0 ? void 0 : pastHolding.amountOwned) ? pastHolding.amountOwned + amount
+                : amount;
+            const newHolding = {
+                companyName,
+                amountOwned: newAmount,
+                tradeHistory: [...pastTradeHistory, newTrade],
+            };
+            const updatedUserDoc = Object.assign(Object.assign({}, userDocResult.userDoc), { currentHoldings: Object.assign({ [ticker]: newHolding }, userDocResult.userDoc.currentHoldings) });
+            const result = yield this._userDb.insert(updatedUserDoc);
+            if (result.ok === true) {
+                return updatedUserDoc.currentHoldings;
+            }
+            else {
+                ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+                ErrorReporter_1.errorReportToCreator('User document update failed? ', result, userDocResult.userDoc);
+                return {};
+            }
         });
     }
 }

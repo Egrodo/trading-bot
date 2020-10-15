@@ -116,6 +116,11 @@ class UserManager {
             }
         });
     }
+    addStocks(user, ticker, buyPrice, companyName, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this._db.addStocksToUserAccount(user, ticker, buyPrice, companyName, amount);
+        });
+    }
 }
 exports.default = UserManager;
 //# sourceMappingURL=UserManager.js.map

@@ -9,27 +9,31 @@ import Messages from '../static/messages';
 
 const DB_URL = `http://${dbUser}:${dbPass}@174.138.58.238:5984`;
 
-// Don't include a price attribute because it will fluctuate
-interface StockHolding {
-  ticker: string;
-  buyTimestamp: Date;
+// This represents the up-to-date account of any given stock
+export interface StockHolding {
+  companyName?: string;
   amountOwned: number;
+  tradeHistory: PastTrade[];
 }
 
+// A StockHolding will have a corresponding PastTrade
 interface PastTrade {
   ticker: string;
-  timestamp: Date;
-  price: string;
+  timestamp: number;
+  price: number;
   transactionType: 'buy' | 'sell';
   amountTraded: number;
+}
+
+export interface CurrentHoldings {
+  [tickerKey: string]: StockHolding;
 }
 
 interface UserDocument {
   _id: string;
   _rev?: string;
   balance: number; // Total balance represented in cents
-  tradeHistory: PastTrade[];
-  currentHoldings: StockHolding[];
+  currentHoldings: CurrentHoldings;
   deleted: boolean;
 }
 
@@ -159,8 +163,7 @@ class DatabaseManager {
         const NewUser: UserDocument = {
           _id: user.id,
           balance: 10000 * 100, // $1000.00 represented in cents
-          tradeHistory: [],
-          currentHoldings: [],
+          currentHoldings: {},
           deleted: false,
         };
 
@@ -245,6 +248,82 @@ class DatabaseManager {
       return this._modifyBalance(user, newBalance);
     }
     return false;
+  }
+
+  public async addStocksToUserAccount(
+    user: User,
+    ticker: string,
+    buyPrice: number,
+    companyName: string,
+    amount: number
+  ): Promise<CurrentHoldings> {
+    // Get userDoc
+    let userDocResult: UserDocReturnType;
+    try {
+      userDocResult = await this.getUserDocument(user);
+    } catch (err) {
+      console.log('ERROR');
+      console.log(err);
+      return;
+    }
+
+    if (userDocResult?.error) {
+      if (userDocResult?.error === 'missing') {
+        warnChannel(Messages.noAccountForUser(user.username));
+        return;
+      } else {
+        warnChannel(Messages.failedToGetAccount);
+        errorReportToCreator(
+          'UserDocResult returned unrecognized data?',
+          userDocResult
+        );
+        return;
+      }
+    }
+
+    const { currentHoldings } = userDocResult.userDoc;
+
+    const newTrade: PastTrade = {
+      ticker,
+      price: buyPrice,
+      amountTraded: amount,
+      timestamp: Date.now(),
+      transactionType: 'buy',
+    };
+
+    let pastHolding = currentHoldings[ticker];
+    const pastTradeHistory = pastHolding?.tradeHistory || [];
+
+    const newAmount = pastHolding?.amountOwned
+      ? pastHolding.amountOwned + amount
+      : amount;
+
+    const newHolding: StockHolding = {
+      companyName,
+      amountOwned: newAmount,
+      tradeHistory: [...pastTradeHistory, newTrade],
+    };
+
+    const updatedUserDoc: UserDocument = {
+      ...userDocResult.userDoc,
+      currentHoldings: {
+        [ticker]: newHolding,
+        ...userDocResult.userDoc.currentHoldings,
+      },
+    };
+
+    const result = await this._userDb.insert(updatedUserDoc);
+    if (result.ok === true) {
+      return updatedUserDoc.currentHoldings;
+    } else {
+      warnChannel(Messages.failedToGetAccount);
+      errorReportToCreator(
+        'User document update failed? ',
+        result,
+        userDocResult.userDoc
+      );
+      return {};
+    }
   }
 }
 
