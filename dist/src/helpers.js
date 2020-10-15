@@ -42,7 +42,8 @@ exports.default = {
         if (balance < 0) {
             return `-$${Math.abs(balance / 100).toLocaleString()}`;
         }
-        return `$${(balance / 100).toLocaleString()}`;
+        const dollarified = Math.round((balance / 100 + Number.EPSILON) * 100) / 100;
+        return `$${dollarified.toLocaleString()}`;
     },
     getUserFromMention: (client, mention) => {
         if (!mention)
@@ -130,7 +131,7 @@ exports.default = {
             ticker = ticker.substring(1, ticker.length);
         if (!ticker.match(/[A-z]/i))
             return '';
-        return ticker;
+        return ticker.toUpperCase();
     },
 };
 //# sourceMappingURL=helpers.js.map

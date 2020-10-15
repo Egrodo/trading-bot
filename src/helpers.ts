@@ -39,11 +39,15 @@ export default {
     }
   },
 
+  // Expects amount to be in cents.
   formatAmountToReadable: (balance: number): string => {
     if (balance < 0) {
       return `-$${Math.abs(balance / 100).toLocaleString()}`;
     }
-    return `$${(balance / 100).toLocaleString()}`;
+    const dollarified =
+      Math.round((balance / 100 + Number.EPSILON) * 100) / 100;
+    //
+    return `$${dollarified.toLocaleString()}`;
   },
 
   getUserFromMention: (client: Client, mention: string): Promise<User> => {
@@ -149,6 +153,6 @@ export default {
     if (ticker[0] === '$') ticker = ticker.substring(1, ticker.length);
     if (!ticker.match(/[A-z]/i)) return '';
 
-    return ticker;
+    return ticker.toUpperCase();
   },
 };

@@ -39,7 +39,7 @@ class TradingMessageHandler {
             }
             else if (isCommand(content, 'getcashbalance', 'checkbalance', 'balance', 'cb', 'getbalance')) {
                 const balance = yield this._userManager.getBalance(msg.author);
-                if (balance != null) {
+                if (balance) {
                     OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.checkBalance(formatAmountToReadable(balance), msg.author));
                 }
             }
@@ -87,21 +87,24 @@ class TradingMessageHandler {
                     return;
                 }
                 const { price, companyName } = priceReturn;
-                const requiredAmount = desiredStockUnits * price;
+                const requiredAmount = desiredStockUnits * price * 100;
                 const usersBalance = yield this._userManager.getBalance(msg.author);
+                if (usersBalance === undefined)
+                    return;
                 if (usersBalance < requiredAmount) {
                     OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.notEnoughMoneyForBuy(formatAmountToReadable(usersBalance), ticker.toUpperCase(), formatAmountToReadable(price), formatAmountToReadable(requiredAmount)));
                     return;
                 }
                 const newBalance = yield this._userManager.decreaseBalance(msg.author, requiredAmount);
-                if (Number.isNaN(newBalance) || newBalance < 0) {
+                if (Number.isNaN(Number(newBalance)) || newBalance < 0) {
                     ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
                     ErrorReporter_1.errorReportToCreator('this._userManager.decreaseBalance returned invalid number?', newBalance, desiredStockUnits, price, requiredAmount);
                     return;
                 }
                 const portfolio = yield this._userManager.addStocks(msg.author, ticker, price, companyName, desiredStockUnits);
-                console.log(portfolio);
-                console.log(`Buying ${ticker} ${desiredStockUnits}`);
+                if (portfolio) {
+                    OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.successfulPurchaseOrder(ticker, formatAmountToReadable(price * 100), desiredStockUnits, portfolio.amountOwned, formatAmountToReadable(newBalance)));
+                }
             }
         });
     }

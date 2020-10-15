@@ -2,7 +2,10 @@ import { Message, User, Client } from 'discord.js';
 
 import helpers from '../helpers';
 const { getUserFromMention, formatAmountToReadable } = helpers;
-import DatabaseManager, { CurrentHoldings } from './DatabaseManager';
+import DatabaseManager, {
+  CurrentHoldings,
+  StockHolding,
+} from './DatabaseManager';
 import OutgoingMessageHandler from '../stateful/OutgoingMessageHandler';
 import { warnChannel, errorReportToCreator } from '../stateful/ErrorReporter';
 
@@ -26,7 +29,7 @@ class UserManager {
     await this._db.createNewUser(msg.author);
   }
 
-  public async getBalance(user: User): Promise<number> {
+  public async getBalance(user: User): Promise<number | undefined> {
     return this._db.getBalance(user);
   }
 
@@ -132,7 +135,7 @@ class UserManager {
     buyPrice: number,
     companyName: string,
     amount: number
-  ): Promise<CurrentHoldings> {
+  ): Promise<StockHolding> {
     return this._db.addStocksToUserAccount(
       user,
       ticker,

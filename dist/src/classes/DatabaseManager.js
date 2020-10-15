@@ -42,6 +42,7 @@ class DatabaseManager {
         });
     }
     _modifyBalance(toUser, newBalance) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let userDocResult;
             try {
@@ -53,7 +54,8 @@ class DatabaseManager {
                 return;
             }
             if (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) {
-                if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'missing') {
+                if (((_a = userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc) === null || _a === void 0 ? void 0 : _a.deleted) === true ||
+                    (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
                     ErrorReporter_1.warnChannel(messages_1.default.noAccountForUser(toUser.username));
                     return;
                 }
@@ -64,21 +66,29 @@ class DatabaseManager {
                 }
             }
             const updatedUserDoc = Object.assign(Object.assign({}, userDocResult.userDoc), { balance: newBalance });
-            const result = yield this._userDb.insert(updatedUserDoc);
-            if (result.ok === true) {
-                return true;
+            try {
+                const result = yield this._userDb.insert(updatedUserDoc);
+                if (result.ok === true) {
+                    return true;
+                }
+                else {
+                    ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+                    ErrorReporter_1.errorReportToCreator('User document update failed in decreaseBalance', result, userDocResult.userDoc);
+                    return false;
+                }
             }
-            else {
+            catch (err) {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
-                ErrorReporter_1.errorReportToCreator('User document update failed? ', result, userDocResult.userDoc);
+                ErrorReporter_1.errorReportToCreator('User document update failed in decreaseBalance', err, userDocResult.userDoc);
                 return false;
             }
         });
     }
     removeUserAccount(user) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const userDocResult = yield this.getUserDocument(user);
-            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true ||
+            if (((_a = userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc) === null || _a === void 0 ? void 0 : _a.deleted) === true ||
                 (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
                 ErrorReporter_1.warnChannel(messages_1.default.noAccount);
                 return;
@@ -88,14 +98,14 @@ class DatabaseManager {
                 ErrorReporter_1.errorReportToCreator('User document creation failed? ', userDocResult.error, user);
                 return;
             }
-            const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { currentHoldings: [], deleted: true });
+            const updatedUser = Object.assign(Object.assign({}, userDocResult.userDoc), { deleted: true });
             const result = yield this._userDb.insert(updatedUser);
             if (result.ok) {
                 OutgoingMessageHandler_1.default.sendToTrading(messages_1.default.deleteSuccess);
             }
             else {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
-                ErrorReporter_1.errorReportToCreator('User document update failed? ', result, user);
+                ErrorReporter_1.errorReportToCreator('User document update failed in removeUserAccount', result, user);
             }
         });
     }
@@ -104,7 +114,7 @@ class DatabaseManager {
             const userDocResult = yield this.getUserDocument(user);
             if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'failed') {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
-                ErrorReporter_1.errorReportToCreator('User document creation failed? ', userDocResult, user);
+                ErrorReporter_1.errorReportToCreator('User document creation failed in createNewUser', userDocResult, user);
                 return;
             }
             if (!userDocResult.userDoc) {
@@ -121,12 +131,12 @@ class DatabaseManager {
                     }
                     else {
                         ErrorReporter_1.warnChannel(messages_1.default.signupFailure);
-                        ErrorReporter_1.errorReportToCreator('User document creation failed? ', result, user);
+                        ErrorReporter_1.errorReportToCreator('User document creation failed in createNewUser', result, user);
                     }
                 }
                 catch (err) {
                     ErrorReporter_1.warnChannel(messages_1.default.failedToDelete);
-                    ErrorReporter_1.errorReportToCreator('User document creation failed? ', err, user);
+                    ErrorReporter_1.errorReportToCreator('User document creation failed in createNewUser', err, user);
                     return;
                 }
             }
@@ -138,7 +148,7 @@ class DatabaseManager {
                 }
                 else {
                     ErrorReporter_1.warnChannel(messages_1.default.signupFailure);
-                    ErrorReporter_1.errorReportToCreator('User document update failed? ', result, user);
+                    ErrorReporter_1.errorReportToCreator('User document update failed createNewUser', result, user);
                 }
             }
             else if (userDocResult.userDoc) {
@@ -148,9 +158,10 @@ class DatabaseManager {
         });
     }
     getBalance(user) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const userDocResult = yield this.getUserDocument(user);
-            if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc.deleted) === true ||
+            if (((_a = userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc) === null || _a === void 0 ? void 0 : _a.deleted) === true ||
                 (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'deleted') {
                 ErrorReporter_1.warnChannel(messages_1.default.noAccount);
             }
@@ -183,13 +194,14 @@ class DatabaseManager {
         return __awaiter(this, void 0, void 0, function* () {
             const userBalance = yield this.getBalance(user);
             const newBalance = userBalance - amount;
-            if (!Number.isNaN(newBalance)) {
+            if (!Number.isNaN(Number(newBalance))) {
                 return this._modifyBalance(user, newBalance);
             }
             return false;
         });
     }
     addStocksToUserAccount(user, ticker, buyPrice, companyName, amount) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let userDocResult;
             try {
@@ -201,7 +213,8 @@ class DatabaseManager {
                 return;
             }
             if (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) {
-                if ((userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'missing') {
+                if (((_a = userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.userDoc) === null || _a === void 0 ? void 0 : _a.deleted) === true ||
+                    (userDocResult === null || userDocResult === void 0 ? void 0 : userDocResult.error) === 'missing') {
                     ErrorReporter_1.warnChannel(messages_1.default.noAccountForUser(user.username));
                     return;
                 }
@@ -228,15 +241,22 @@ class DatabaseManager {
                 amountOwned: newAmount,
                 tradeHistory: [...pastTradeHistory, newTrade],
             };
-            const updatedUserDoc = Object.assign(Object.assign({}, userDocResult.userDoc), { currentHoldings: Object.assign({ [ticker]: newHolding }, userDocResult.userDoc.currentHoldings) });
-            const result = yield this._userDb.insert(updatedUserDoc);
-            if (result.ok === true) {
-                return updatedUserDoc.currentHoldings;
+            const updatedUserDoc = Object.assign(Object.assign({}, userDocResult.userDoc), { currentHoldings: Object.assign(Object.assign({}, userDocResult.userDoc.currentHoldings), { [ticker]: newHolding }) });
+            try {
+                const result = yield this._userDb.insert(updatedUserDoc, {
+                    rev: updatedUserDoc._rev,
+                });
+                if (result.ok === true) {
+                    return newHolding;
+                }
+                else {
+                    ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
+                    ErrorReporter_1.errorReportToCreator('User document update failed in addStocksToUserAccount', result, userDocResult.userDoc);
+                }
             }
-            else {
+            catch (err) {
                 ErrorReporter_1.warnChannel(messages_1.default.failedToGetAccount);
-                ErrorReporter_1.errorReportToCreator('User document update failed? ', result, userDocResult.userDoc);
-                return {};
+                ErrorReporter_1.errorReportToCreator('User document update failed in addStocksToUserAccount', err, userDocResult.userDoc);
             }
         });
     }

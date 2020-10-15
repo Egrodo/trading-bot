@@ -1,4 +1,5 @@
 import { User } from 'discord.js';
+import v8 from 'v8';
 import Nano, { ServerScope, DocumentScope, DocumentGetResponse } from 'nano';
 import { dbUser, dbPass } from '../../auth.json';
 import OutgoingMessageHandler from '../stateful/OutgoingMessageHandler';
@@ -78,7 +79,10 @@ class DatabaseManager {
     }
 
     if (userDocResult?.error) {
-      if (userDocResult?.error === 'missing') {
+      if (
+        userDocResult?.userDoc?.deleted === true ||
+        userDocResult?.error === 'deleted'
+      ) {
         warnChannel(Messages.noAccountForUser(toUser.username));
         return;
       } else {
@@ -96,14 +100,25 @@ class DatabaseManager {
       balance: newBalance,
     };
 
-    const result = await this._userDb.insert(updatedUserDoc);
-    if (result.ok === true) {
-      return true;
-    } else {
+    try {
+      const result = await this._userDb.insert(updatedUserDoc);
+
+      if (result.ok === true) {
+        return true;
+      } else {
+        warnChannel(Messages.failedToGetAccount);
+        errorReportToCreator(
+          'User document update failed in decreaseBalance',
+          result,
+          userDocResult.userDoc
+        );
+        return false;
+      }
+    } catch (err) {
       warnChannel(Messages.failedToGetAccount);
       errorReportToCreator(
-        'User document update failed? ',
-        result,
+        'User document update failed in decreaseBalance',
+        err,
         userDocResult.userDoc
       );
       return false;
@@ -114,7 +129,7 @@ class DatabaseManager {
     const userDocResult = await this.getUserDocument(user);
 
     if (
-      userDocResult?.userDoc.deleted === true ||
+      userDocResult?.userDoc?.deleted === true ||
       userDocResult?.error === 'deleted'
     ) {
       warnChannel(Messages.noAccount);
@@ -131,7 +146,6 @@ class DatabaseManager {
 
     const updatedUser = {
       ...userDocResult.userDoc,
-      currentHoldings: [],
       deleted: true,
     };
 
@@ -141,7 +155,11 @@ class DatabaseManager {
       OutgoingMessageHandler.sendToTrading(Messages.deleteSuccess);
     } else {
       warnChannel(Messages.failedToDelete);
-      errorReportToCreator('User document update failed? ', result, user);
+      errorReportToCreator(
+        'User document update failed in removeUserAccount',
+        result,
+        user
+      );
     }
   }
 
@@ -151,7 +169,7 @@ class DatabaseManager {
     if (userDocResult?.error === 'failed') {
       warnChannel(Messages.failedToDelete);
       errorReportToCreator(
-        'User document creation failed? ',
+        'User document creation failed in createNewUser',
         userDocResult,
         user
       );
@@ -172,11 +190,19 @@ class DatabaseManager {
           OutgoingMessageHandler.sendToTrading(Messages.signupSuccess);
         } else {
           warnChannel(Messages.signupFailure);
-          errorReportToCreator('User document creation failed? ', result, user);
+          errorReportToCreator(
+            'User document creation failed in createNewUser',
+            result,
+            user
+          );
         }
       } catch (err) {
         warnChannel(Messages.failedToDelete);
-        errorReportToCreator('User document creation failed? ', err, user);
+        errorReportToCreator(
+          'User document creation failed in createNewUser',
+          err,
+          user
+        );
         return;
       }
     } else if (userDocResult.userDoc.deleted === true) {
@@ -195,7 +221,11 @@ class DatabaseManager {
         );
       } else {
         warnChannel(Messages.signupFailure);
-        errorReportToCreator('User document update failed? ', result, user);
+        errorReportToCreator(
+          'User document update failed createNewUser',
+          result,
+          user
+        );
       }
     } else if (userDocResult.userDoc) {
       // They trippin'
@@ -204,10 +234,10 @@ class DatabaseManager {
     }
   }
 
-  public async getBalance(user: User): Promise<number> {
+  public async getBalance(user: User): Promise<number | undefined> {
     const userDocResult = await this.getUserDocument(user);
     if (
-      userDocResult?.userDoc.deleted === true ||
+      userDocResult?.userDoc?.deleted === true ||
       userDocResult?.error === 'deleted'
     ) {
       warnChannel(Messages.noAccount);
@@ -244,7 +274,7 @@ class DatabaseManager {
   ): Promise<boolean> {
     const userBalance = await this.getBalance(user);
     const newBalance = userBalance - amount;
-    if (!Number.isNaN(newBalance)) {
+    if (!Number.isNaN(Number(newBalance))) {
       return this._modifyBalance(user, newBalance);
     }
     return false;
@@ -256,7 +286,7 @@ class DatabaseManager {
     buyPrice: number,
     companyName: string,
     amount: number
-  ): Promise<CurrentHoldings> {
+  ): Promise<StockHolding> {
     // Get userDoc
     let userDocResult: UserDocReturnType;
     try {
@@ -268,7 +298,10 @@ class DatabaseManager {
     }
 
     if (userDocResult?.error) {
-      if (userDocResult?.error === 'missing') {
+      if (
+        userDocResult?.userDoc?.deleted === true ||
+        userDocResult?.error === 'missing'
+      ) {
         warnChannel(Messages.noAccountForUser(user.username));
         return;
       } else {
@@ -307,22 +340,33 @@ class DatabaseManager {
     const updatedUserDoc: UserDocument = {
       ...userDocResult.userDoc,
       currentHoldings: {
-        [ticker]: newHolding,
         ...userDocResult.userDoc.currentHoldings,
+        [ticker]: newHolding,
       },
     };
 
-    const result = await this._userDb.insert(updatedUserDoc);
-    if (result.ok === true) {
-      return updatedUserDoc.currentHoldings;
-    } else {
+    try {
+      const result = await this._userDb.insert(updatedUserDoc, {
+        rev: updatedUserDoc._rev,
+      });
+
+      if (result.ok === true) {
+        return newHolding;
+      } else {
+        warnChannel(Messages.failedToGetAccount);
+        errorReportToCreator(
+          'User document update failed in addStocksToUserAccount',
+          result,
+          userDocResult.userDoc
+        );
+      }
+    } catch (err) {
       warnChannel(Messages.failedToGetAccount);
       errorReportToCreator(
-        'User document update failed? ',
-        result,
+        'User document update failed in addStocksToUserAccount',
+        err,
         userDocResult.userDoc
       );
-      return {};
     }
   }
 }

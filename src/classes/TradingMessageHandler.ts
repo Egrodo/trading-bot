@@ -9,6 +9,7 @@ import IEXCloudApis, {
   ErrorType,
 } from '../stateful/IEXCloudApis';
 import OutgoingMessageHandler from '../stateful/OutgoingMessageHandler';
+import { captureRejectionSymbol } from 'events';
 
 const {
   isCommand,
@@ -49,7 +50,7 @@ class TradingMessageHandler {
       )
     ) {
       const balance = await this._userManager.getBalance(msg.author);
-      if (balance != null) {
+      if (balance) {
         OutgoingMessageHandler.sendToTrading(
           Messages.checkBalance(formatAmountToReadable(balance), msg.author)
         );
@@ -110,9 +111,10 @@ class TradingMessageHandler {
 
       const { price, companyName } = <GetPriceReturnType>priceReturn;
 
-      const requiredAmount = desiredStockUnits * price;
+      const requiredAmount = desiredStockUnits * price * 100;
       const usersBalance = await this._userManager.getBalance(msg.author);
 
+      if (usersBalance === undefined) return;
       if (usersBalance < requiredAmount) {
         OutgoingMessageHandler.sendToTrading(
           Messages.notEnoughMoneyForBuy(
@@ -131,7 +133,7 @@ class TradingMessageHandler {
         requiredAmount
       );
 
-      if (Number.isNaN(newBalance) || newBalance < 0) {
+      if (Number.isNaN(Number(newBalance)) || newBalance < 0) {
         warnChannel(Messages.failedToGetAccount);
         errorReportToCreator(
           'this._userManager.decreaseBalance returned invalid number?',
@@ -151,10 +153,17 @@ class TradingMessageHandler {
         desiredStockUnits
       );
 
-      // TODO: Output this
-      console.log(portfolio);
-
-      console.log(`Buying ${ticker} ${desiredStockUnits}`);
+      if (portfolio) {
+        OutgoingMessageHandler.sendToTrading(
+          Messages.successfulPurchaseOrder(
+            ticker,
+            formatAmountToReadable(price * 100),
+            desiredStockUnits,
+            portfolio.amountOwned,
+            formatAmountToReadable(newBalance)
+          )
+        );
+      }
     }
 
     // TODO: Add command to get total value of users account.
