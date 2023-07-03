@@ -20,5 +20,5 @@ const messages = {
     failedToGetStockPrice: `Failed to get stock price. I'll PM my creator to report this :(`,
     successfulPurchaseOrder: (ticker, price, buyAmount, totalAmount, balance) => `Purchase order for ${ticker} completed for ${buyAmount} at ${price} / share. You now own ${totalAmount} stocks of ${ticker} and have a remaining balance of ${balance}`,
 };
-exports.default = Object.assign({}, messages);
+exports.default = { ...messages };
 //# sourceMappingURL=messages.js.map
