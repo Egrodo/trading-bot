@@ -1,27 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.commands = void 0;
-const core_1 = require("@discordjs/core");
 exports.commands = [
     {
-        name: "ping",
-        description: "ERROR",
+        name: 'ping',
+        description: 'ERROR',
     },
 ];
 class BotStatusHandler {
-    async onMessage(interaction, api) {
-        switch (interaction.data.name) {
-            case "ping":
+    async onMessage(interaction) {
+        switch (interaction.commandName) {
+            case 'ping':
             default:
-                return this.ping(interaction, api);
+                return this.ping(interaction);
         }
     }
-    ping(interaction, api) {
-        api.interactions.reply(interaction.id, interaction.token, {
-            content: "Pong!",
-            flags: core_1.MessageFlags.Ephemeral,
-        });
+    ping(interaction) {
+        interaction.reply({ content: 'pong', ephemeral: true });
     }
 }
-exports.default = (new BotStatusHandler());
+exports.default = new BotStatusHandler();
 //# sourceMappingURL=BotStatusHandler.js.map

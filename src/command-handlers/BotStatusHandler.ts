@@ -4,33 +4,28 @@ import {
   APIInteraction,
   Client,
   MessageFlags,
-} from "@discordjs/core";
+} from '@discordjs/core';
+import { CommandInteraction, Interaction } from 'discord.js';
 
 export const commands = [
   {
-    name: "ping",
-    description: "ERROR",
+    name: 'ping',
+    description: 'ERROR',
   },
 ];
 
 class BotStatusHandler {
-  public async onMessage(
-    interaction: APIApplicationCommandInteraction,
-    api: API,
-  ): Promise<void> {
-    switch (interaction.data.name) {
-      case "ping":
+  public async onMessage(interaction: CommandInteraction): Promise<void> {
+    switch (interaction.commandName) {
+      case 'ping':
       default:
-        return this.ping(interaction, api);
+        return this.ping(interaction);
     }
   }
 
-  private ping(interaction: APIInteraction, api: API) {
-    api.interactions.reply(interaction.id, interaction.token, {
-      content: "Pong!",
-      flags: MessageFlags.Ephemeral,
-    });
+  private ping(interaction: CommandInteraction) {
+    interaction.reply({ content: 'pong', ephemeral: true });
   }
 }
 
-export default (new BotStatusHandler());
+export default new BotStatusHandler();

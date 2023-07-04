@@ -7,29 +7,24 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.commands = void 0;
-const discord_js_1 = require("discord.js");
 const helpers_1 = require("../utils/helpers");
 exports.commands = [
     {
-        name: "price",
-        description: "Check the price of a stock",
+        name: 'price',
+        description: 'Check the price of a stock',
     },
 ];
 class TradingCommandHandler {
     init(client) {
         if (!client)
-            throw new Error("Client is undefined");
+            throw new Error('Client is undefined');
         this._client = client;
     }
-    async onMessage(interaction, api) {
-        api.interactions.reply(interaction.id, interaction.token, {
-            content: "I have not made this yet!",
-            flags: discord_js_1.MessageFlags.Ephemeral,
-        });
+    async onMessage(interaction) {
     }
 }
 __decorate([
     (0, helpers_1.Guard)()
 ], TradingCommandHandler.prototype, "onMessage", null);
-exports.default = (new TradingCommandHandler());
+exports.default = new TradingCommandHandler();
 //# sourceMappingURL=TradingCommandHandler.js.map

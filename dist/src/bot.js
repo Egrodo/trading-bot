@@ -28,10 +28,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TRADING_SIM_CHANNEL_ID = void 0;
 const ENV = __importStar(require("../env.json"));
-exports.TRADING_SIM_CHANNEL_ID = "759562306417328148";
+exports.TRADING_SIM_CHANNEL_ID = '759562306417328148';
 const discord_js_1 = require("discord.js");
 const TradingCommandHandler_1 = __importStar(require("./command-handlers/TradingCommandHandler"));
-const BotStatusHandler_1 = require("./command-handlers/BotStatusHandler");
+const BotStatusHandler_1 = __importStar(require("./command-handlers/BotStatusHandler"));
 const ErrorReporter_1 = __importDefault(require("./utils/ErrorReporter"));
 const client = new discord_js_1.Client({ intents: [discord_js_1.GatewayIntentBits.Guilds] });
 const rest = new discord_js_1.REST().setToken(ENV.token);
@@ -47,15 +47,18 @@ async function start() {
 }
 async function CommandRouter(interaction) {
     if (interaction.type !== discord_js_1.InteractionType.ApplicationCommand) {
-        console.error("Invalid interaction type");
+        console.error('Invalid interaction type');
         return;
     }
     const { commandName } = interaction;
-    console.log("Received command: ", commandName);
+    console.log('Received command: ', commandName);
+    if (TradingCommandHandler_1.commands.some((c) => c.name === commandName)) {
+        return TradingCommandHandler_1.default.onMessage(interaction);
+    }
     if (BotStatusHandler_1.commands.some((c) => c.name === commandName)) {
-        ErrorReporter_1.default.reportToCreator("pinged");
+        return BotStatusHandler_1.default.onMessage(interaction);
     }
 }
-console.log("Logging in...");
+console.log('Logging in...');
 client.login(ENV.token);
 //# sourceMappingURL=bot.js.map

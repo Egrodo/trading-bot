@@ -1,37 +1,56 @@
-import * as ENV from "../../env.json";
-import { ChannelType, Client, EmbedBuilder, TextChannel } from "discord.js";
-import { Guard } from "./helpers";
+import * as ENV from '../../env.json';
+import {
+  ChannelType,
+  Client,
+  EmbedBuilder,
+  TextChannel,
+  User,
+} from 'discord.js';
+import { Guard } from './helpers';
 
 class ErrorReporter {
   _client: Client;
-  _debugInfoChannel: TextChannel;
+  _debugChannel: TextChannel;
+  _creator: User;
   init(client: Client) {
-    if (!client) throw new Error("Client is undefined");
+    if (!client) throw new Error('Client is undefined');
     this._client = client;
     this.fetchDebugChannel();
+    this.fetchCreator();
   }
 
   private async fetchDebugChannel() {
     const channel = await this._client.channels.cache.get(
-      ENV.debugInfoChannelId,
+      ENV.debugInfoChannelId
     );
     if (channel.type === ChannelType.GuildText) {
-      this._debugInfoChannel = channel;
+      this._debugChannel = channel;
+    }
+  }
+
+  private async fetchCreator() {
+    const creator = await this._client.users.fetch(ENV.creatorId);
+    if (creator) {
+      this._creator = creator;
     }
   }
 
   @Guard()
   // Reports an error to designated channel
-  public async reportToCreator(msg: string, ...errorInformation: any) {
+  public async reportErrorInDebugChannel(
+    msg: string,
+    ...errorInformation: any
+  ) {
     console.error(`ERROR REPORTED TO CREATOR WITH MSG: ${msg}}`);
     console.error(errorInformation);
 
     const errorMsg = new EmbedBuilder()
-      .setColor("#ff0000")
-      .setTitle("Trading Bot Error Report")
+      .setColor('#ff0000')
+      .setTitle('Trading Bot Error Report')
       .setDescription(msg);
 
-    this._debugInfoChannel.send({ embeds: [errorMsg] });
+    this._debugChannel.send(this._creator.toString());
+    this._debugChannel.send({ embeds: [errorMsg] });
   }
 }
 

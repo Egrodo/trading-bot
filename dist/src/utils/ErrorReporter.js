@@ -35,28 +35,36 @@ const helpers_1 = require("./helpers");
 class ErrorReporter {
     init(client) {
         if (!client)
-            throw new Error("Client is undefined");
+            throw new Error('Client is undefined');
         this._client = client;
         this.fetchDebugChannel();
+        this.fetchCreator();
     }
     async fetchDebugChannel() {
         const channel = await this._client.channels.cache.get(ENV.debugInfoChannelId);
         if (channel.type === discord_js_1.ChannelType.GuildText) {
-            this._debugInfoChannel = channel;
+            this._debugChannel = channel;
         }
     }
-    async reportToCreator(msg, ...errorInformation) {
+    async fetchCreator() {
+        const creator = await this._client.users.fetch(ENV.creatorId);
+        if (creator) {
+            this._creator = creator;
+        }
+    }
+    async reportErrorInDebugChannel(msg, ...errorInformation) {
         console.error(`ERROR REPORTED TO CREATOR WITH MSG: ${msg}}`);
         console.error(errorInformation);
         const errorMsg = new discord_js_1.EmbedBuilder()
-            .setColor("#ff0000")
-            .setTitle("Trading Bot Error Report")
+            .setColor('#ff0000')
+            .setTitle('Trading Bot Error Report')
             .setDescription(msg);
-        this._debugInfoChannel.send({ embeds: [errorMsg] });
+        this._debugChannel.send(this._creator.toString());
+        this._debugChannel.send({ embeds: [errorMsg] });
     }
 }
 __decorate([
     (0, helpers_1.Guard)()
-], ErrorReporter.prototype, "reportToCreator", null);
+], ErrorReporter.prototype, "reportErrorInDebugChannel", null);
 exports.default = new ErrorReporter();
 //# sourceMappingURL=ErrorReporter.js.map
