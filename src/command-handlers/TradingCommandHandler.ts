@@ -1,20 +1,14 @@
-import {
-  APIApplicationCommandInteraction,
-  Client,
-  Interaction,
-  MessageFlags,
-} from 'discord.js';
+import { Client, CommandInteraction } from 'discord.js';
 import { Guard } from '../utils/helpers';
-import { API } from '@discordjs/core';
-
-export const commands = [
-  {
-    name: 'price',
-    description: 'Check the price of a stock',
-  },
-];
+import ENV from '../../env.json';
 
 class TradingCommandHandler {
+  public commands: CommandListType = {
+    price: {
+      description: 'Check the price of a stock',
+      allowedChannel: ENV.tradingChannelId,
+    },
+  };
   private _client: Client;
   //   _userManager: UserManager;
   //   _tradingChannel: TextChannel;
@@ -23,9 +17,23 @@ class TradingCommandHandler {
     this._client = client;
   }
 
-  @Guard()
-  public async onMessage(interaction: Interaction): Promise<void> {
-    // todo;
+  public async onMessage(interaction: CommandInteraction): Promise<void> {
+    const { commandName } = interaction;
+
+    // Ensure that the command is only used in the proper channel.
+    if (
+      !this.commands[commandName].allowedChannel.includes(interaction.channelId)
+    ) {
+      interaction.reply({
+        content: `This command is only available in <#${this.commands[
+          commandName
+        ].allowedChannel.toString()}>`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    interaction.reply('Work in progress!');
   }
 }
 

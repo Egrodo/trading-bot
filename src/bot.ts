@@ -5,7 +5,6 @@ import * as ENV from '../env.json';
 
 // 1.5 second cooldown to limit spam
 // const COMMAND_COOLDOWN = 1.5 * 1000;
-export const TRADING_SIM_CHANNEL_ID = '759562306417328148';
 
 import {
   APIInteraction,
@@ -18,18 +17,12 @@ import {
   Routes,
 } from 'discord.js';
 
-import TradingCommandHandler, {
-  commands as TradingCommands,
-} from './command-handlers/TradingCommandHandler';
-import BotStatusHandler, {
-  commands as BotStatusCommands,
-} from './command-handlers/BotStatusHandler';
+import TradingCommandHandler from './command-handlers/TradingCommandHandler';
+import BotStatusHandler from './command-handlers/BotStatusHandler';
 import ErrorReporter from './utils/ErrorReporter';
-import { WithIntrinsicProps } from '@discordjs/core';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
-const commands = [...TradingCommands, ...BotStatusCommands];
 
 // const limitedMessageHandler = rateLimiter(COMMAND_COOLDOWN, MessageRouter);
 
@@ -39,6 +32,20 @@ client.once(Events.ClientReady, start);
 async function start() {
   console.log(`Logged in as ${client.user.tag}!`);
   // Register commands
+  // TODO: Clean this up
+  const TradingCommands = Object.entries(TradingCommandHandler.commands).map(
+    ([name, command]) => ({
+      name,
+      description: command.description,
+    })
+  );
+  const BotStatusCommands = Object.entries(BotStatusHandler.commands).map(
+    ([name, command]) => ({
+      name,
+      description: command.description,
+    })
+  );
+  const commands = [...TradingCommands, ...BotStatusCommands];
   const data: any = await rest.put(
     Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
     { body: commands }
@@ -79,11 +86,10 @@ async function CommandRouter(interaction: Interaction) {
 
   console.log('Received command: ', commandName);
 
-  if (TradingCommands.some((c) => c.name === commandName)) {
+  if (TradingCommandHandler.commands.hasOwnProperty(commandName)) {
     return TradingCommandHandler.onMessage(interaction);
   }
-
-  if (BotStatusCommands.some((c) => c.name === commandName)) {
+  if (BotStatusHandler.commands.hasOwnProperty(commandName)) {
     return BotStatusHandler.onMessage(interaction);
   }
 }

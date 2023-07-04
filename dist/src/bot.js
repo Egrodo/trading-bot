@@ -26,19 +26,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TRADING_SIM_CHANNEL_ID = void 0;
 const ENV = __importStar(require("../env.json"));
-exports.TRADING_SIM_CHANNEL_ID = '759562306417328148';
 const discord_js_1 = require("discord.js");
-const TradingCommandHandler_1 = __importStar(require("./command-handlers/TradingCommandHandler"));
-const BotStatusHandler_1 = __importStar(require("./command-handlers/BotStatusHandler"));
+const TradingCommandHandler_1 = __importDefault(require("./command-handlers/TradingCommandHandler"));
+const BotStatusHandler_1 = __importDefault(require("./command-handlers/BotStatusHandler"));
 const ErrorReporter_1 = __importDefault(require("./utils/ErrorReporter"));
 const client = new discord_js_1.Client({ intents: [discord_js_1.GatewayIntentBits.Guilds] });
 const rest = new discord_js_1.REST().setToken(ENV.token);
-const commands = [...TradingCommandHandler_1.commands, ...BotStatusHandler_1.commands];
 client.once(discord_js_1.Events.ClientReady, start);
 async function start() {
     console.log(`Logged in as ${client.user.tag}!`);
+    const TradingCommands = Object.entries(TradingCommandHandler_1.default.commands).map(([name, command]) => ({
+        name,
+        description: command.description,
+    }));
+    const BotStatusCommands = Object.entries(BotStatusHandler_1.default.commands).map(([name, command]) => ({
+        name,
+        description: command.description,
+    }));
+    const commands = [...TradingCommands, ...BotStatusCommands];
     const data = await rest.put(discord_js_1.Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId), { body: commands });
     console.log(`Successfully reloaded ${data.length ?? 0} application (/) commands.`);
     TradingCommandHandler_1.default.init(client);
@@ -52,10 +58,10 @@ async function CommandRouter(interaction) {
     }
     const { commandName } = interaction;
     console.log('Received command: ', commandName);
-    if (TradingCommandHandler_1.commands.some((c) => c.name === commandName)) {
+    if (TradingCommandHandler_1.default.commands.hasOwnProperty(commandName)) {
         return TradingCommandHandler_1.default.onMessage(interaction);
     }
-    if (BotStatusHandler_1.commands.some((c) => c.name === commandName)) {
+    if (BotStatusHandler_1.default.commands.hasOwnProperty(commandName)) {
         return BotStatusHandler_1.default.onMessage(interaction);
     }
 }
