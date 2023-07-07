@@ -31,21 +31,15 @@ const discord_js_1 = require("discord.js");
 const TradingCommandHandler_1 = __importDefault(require("./command-handlers/TradingCommandHandler"));
 const BotStatusHandler_1 = __importDefault(require("./command-handlers/BotStatusHandler"));
 const ErrorReporter_1 = __importDefault(require("./utils/ErrorReporter"));
+const slashCommandBuilder_1 = require("./utils/slashCommandBuilder");
 const client = new discord_js_1.Client({ intents: [discord_js_1.GatewayIntentBits.Guilds] });
 const rest = new discord_js_1.REST().setToken(ENV.token);
 client.once(discord_js_1.Events.ClientReady, start);
 async function start() {
     console.log(`Logged in as ${client.user.tag}!`);
-    const TradingCommands = Object.entries(TradingCommandHandler_1.default.commands).map(([name, command]) => ({
-        name,
-        description: command.description,
-    }));
-    const BotStatusCommands = Object.entries(BotStatusHandler_1.default.commands).map(([name, command]) => ({
-        name,
-        description: command.description,
-    }));
-    const commands = [...TradingCommands, ...BotStatusCommands];
-    const data = await rest.put(discord_js_1.Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId), { body: commands });
+    const TradingCommands = (0, slashCommandBuilder_1.formatSlashCommands)(TradingCommandHandler_1.default.commands);
+    const BotStatusCommands = (0, slashCommandBuilder_1.formatSlashCommands)(BotStatusHandler_1.default.commands);
+    const data = await rest.put(discord_js_1.Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId), { body: [...TradingCommands, ...BotStatusCommands] });
     console.log(`Successfully reloaded ${data.length ?? 0} application (/) commands.`);
     TradingCommandHandler_1.default.init(client);
     ErrorReporter_1.default.init(client);

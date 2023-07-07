@@ -8,6 +8,7 @@ class BotStatusHandler {
       allowedChannel: ENV.debugInfoChannelId,
     },
   };
+
   public async onMessage(interaction: CommandInteraction): Promise<void> {
     switch (interaction.commandName) {
       case 'ping':

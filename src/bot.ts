@@ -20,6 +20,7 @@ import {
 import TradingCommandHandler from './command-handlers/TradingCommandHandler';
 import BotStatusHandler from './command-handlers/BotStatusHandler';
 import ErrorReporter from './utils/ErrorReporter';
+import { formatSlashCommands } from './utils/slashCommandBuilder';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
@@ -31,24 +32,13 @@ client.once(Events.ClientReady, start);
 
 async function start() {
   console.log(`Logged in as ${client.user.tag}!`);
+
   // Register commands
-  // TODO: Clean this up
-  const TradingCommands = Object.entries(TradingCommandHandler.commands).map(
-    ([name, command]) => ({
-      name,
-      description: command.description,
-    })
-  );
-  const BotStatusCommands = Object.entries(BotStatusHandler.commands).map(
-    ([name, command]) => ({
-      name,
-      description: command.description,
-    })
-  );
-  const commands = [...TradingCommands, ...BotStatusCommands];
+  const TradingCommands = formatSlashCommands(TradingCommandHandler.commands);
+  const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
   const data: any = await rest.put(
     Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
-    { body: commands }
+    { body: [...TradingCommands, ...BotStatusCommands] }
   );
   console.log(
     `Successfully reloaded ${data.length ?? 0} application (/) commands.`
@@ -65,18 +55,6 @@ async function start() {
   // IEXCloudApisInit(AUTH.iexKey);
 }
 
-// if (
-//   interaction.type !== InteractionType.ApplicationCommand ||
-//   interaction.data.name !== "ping"
-// ) {
-// await api.interactions.reply(interaction.id, interaction.token, {
-//   content: "Pong!",
-//   flags: MessageFlags.Ephemeral,
-// });
-/**
- * So maybe we have different CommandSources that export lists of commands that they handle
- * that way we can cleanly separate concerns for account management vs trading requests etc
- */
 async function CommandRouter(interaction: Interaction) {
   if (interaction.type !== InteractionType.ApplicationCommand) {
     console.error('Invalid interaction type');
