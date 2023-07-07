@@ -13,6 +13,7 @@ const discord_js_1 = require("discord.js");
 const helpers_1 = require("../utils/helpers");
 const env_json_1 = __importDefault(require("../../env.json"));
 const ErrorReporter_1 = __importDefault(require("../utils/ErrorReporter"));
+const PolygonApi_1 = __importDefault(require("../classes/PolygonApi"));
 class TradingCommandHandler {
     constructor() {
         this.commands = {
@@ -58,16 +59,27 @@ class TradingCommandHandler {
         }
         switch (commandName) {
             case 'price':
-                this.handlePriceCommand(interaction);
+                return this.handlePriceCommand(interaction);
             default:
-                interaction.reply('Work in progress!');
+                interaction.reply('No command with that name found?');
         }
     }
     async handlePriceCommand(interaction) {
-        const ticker = interaction.options.get('ticker').value;
+        const ticker = interaction.options.get('ticker').value.toUpperCase();
         if (!ticker) {
             ErrorReporter_1.default.reportErrorInDebugChannel('Price command received with no ticker', interaction);
             return;
+        }
+        const quote = await PolygonApi_1.default.getPrevClosePriceData(ticker);
+        if (quote.resultsCount === 0) {
+            interaction.reply({
+                content: `No stock found with ticker ${ticker}.`,
+                ephemeral: true,
+            });
+        }
+        else {
+            const result = quote.results[0];
+            interaction.reply(`The price of ${ticker} on previous close was $${result.c}`);
         }
     }
 }

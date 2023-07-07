@@ -7,6 +7,7 @@ import {
 import { Guard } from '../utils/helpers';
 import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
+import PolygonApi from '../classes/PolygonApi';
 
 class TradingCommandHandler {
   public commands: CommandListType = {
@@ -66,16 +67,18 @@ class TradingCommandHandler {
 
     switch (commandName) {
       case 'price':
-        this.handlePriceCommand(interaction);
+        return this.handlePriceCommand(interaction);
       default:
-        interaction.reply('Work in progress!');
+        interaction.reply('No command with that name found?');
     }
   }
 
   private async handlePriceCommand(
     interaction: CommandInteraction
   ): Promise<void> {
-    const ticker = interaction.options.get('ticker').value;
+    const ticker = (
+      interaction.options.get('ticker').value as string
+    ).toUpperCase();
     if (!ticker) {
       ErrorReporter.reportErrorInDebugChannel(
         'Price command received with no ticker',
@@ -84,7 +87,19 @@ class TradingCommandHandler {
       return;
     }
 
-    // TODO: Get price
+    // TODO: Format it all pretty-like & include more info
+    const quote = await PolygonApi.getPrevClosePriceData(ticker);
+    if (quote.resultsCount === 0) {
+      interaction.reply({
+        content: `No stock found with ticker ${ticker}.`,
+        ephemeral: true,
+      });
+    } else {
+      const result = quote.results[0]; // For previous close, there should only be one result.
+      interaction.reply(
+        `The price of ${ticker} on previous close was $${result.c}`
+      );
+    }
   }
 }
 
