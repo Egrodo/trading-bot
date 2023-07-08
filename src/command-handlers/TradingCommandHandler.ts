@@ -127,9 +127,12 @@ class TradingCommandHandler {
 
     const prevClose = quote.results[0]; // For previous close, there should only be one result.
 
-    let companyInfoReq: null | ITickerDetails = null;
+    let companyInfo;
     try {
-      companyInfoReq = await PolygonApi.getTickerInfo(ticker);
+      const companyInfoReq = await PolygonApi.getTickerInfo(ticker);
+      if (companyInfoReq?.status === 'OK') {
+        companyInfo = companyInfoReq.results;
+      }
     } catch (err) {
       if (err.message !== 'Ticker not found.') {
         ErrorReporter.reportErrorInDebugChannel(
@@ -139,11 +142,7 @@ class TradingCommandHandler {
       }
     }
 
-    let companyInfo;
-    if (companyInfoReq?.status === 'OK') {
-      companyInfo = companyInfoReq;
-    }
-
+    console.log(companyInfo);
     // Compose data to display
     const companyName = companyInfo?.name ?? ticker;
     const logoUrl = companyInfo?.branding?.icon_url
@@ -173,14 +172,13 @@ class TradingCommandHandler {
           inline: true,
         },
         {
-          name: 'Percent change',
-          value: `${((prevClose.c / prevClose.o - 1) * 100).toFixed(2)}%`,
-          inline: true,
-        },
-        {
           name: '\u200B',
           value: '\u200B',
           inline: true,
+        },
+        {
+          name: 'Percent change',
+          value: `${((prevClose.c / prevClose.o - 1) * 100).toFixed(2)}%`,
         },
         {
           name: 'Open price',
