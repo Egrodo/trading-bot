@@ -173,6 +173,11 @@ class TradingCommandHandler {
           inline: true,
         },
         {
+          name: 'Percent change',
+          value: `${((prevClose.c / prevClose.o - 1) * 100).toFixed(2)}%`,
+          inline: true,
+        },
+        {
           name: '\u200B',
           value: '\u200B',
           inline: true,
