@@ -4,20 +4,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const env_json_1 = __importDefault(require("../../env.json"));
-const ErrorReporter_1 = __importDefault(require("../utils/ErrorReporter"));
+const client_js_1 = require("@polygon.io/client-js");
 const BASE_URL = 'https://api.polygon.io/v2';
 class PolygonApi {
+    constructor() {
+        this._restClient = (0, client_js_1.restClient)(env_json_1.default.polygonKey);
+    }
     async getPrevClosePriceData(ticker) {
-        const reqType = 'aggs/ticker';
-        const composedUrl = `${BASE_URL}/${reqType}/${ticker}/prev?adjusted=true&apiKey=${env_json_1.default.polygonKey}`;
-        try {
-            const res = await fetch(composedUrl);
-            const data = await res.json();
-            return data;
-        }
-        catch (err) {
-            ErrorReporter_1.default.reportErrorInDebugChannel('Request to Polygon API failed', err);
-        }
+        return this._restClient.stocks.previousClose(ticker);
+    }
+    async getTickerInfo(ticker) {
+        return this._restClient.reference.tickerDetails(ticker);
     }
 }
 exports.default = new PolygonApi();

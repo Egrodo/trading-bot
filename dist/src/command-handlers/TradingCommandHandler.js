@@ -76,11 +76,65 @@ class TradingCommandHandler {
                 content: `No stock found with ticker ${ticker}.`,
                 ephemeral: true,
             });
+            return;
         }
-        else {
-            const result = quote.results[0];
-            interaction.reply(`The price of ${ticker} on previous close was $${result.c}`);
-        }
+        const prevClose = quote.results[0];
+        const companyInfoReq = await PolygonApi_1.default.getTickerInfo(ticker);
+        const { results: companyInfo } = companyInfoReq;
+        const companyName = companyInfo.name ?? ticker;
+        const logoUrl = `${companyInfo.branding.icon_url}?apiKey=${env_json_1.default.polygonKey}`;
+        const logoAttachment = new discord_js_1.AttachmentBuilder(logoUrl, {
+            name: `${ticker}-logo.png`,
+        });
+        const color = prevClose.c > prevClose.o ? '#00FF00' : '#FF0000';
+        const embed = new discord_js_1.EmbedBuilder()
+            .setColor(color)
+            .setTitle(companyName)
+            .setURL(companyInfo.homepage_url)
+            .setAuthor({
+            name: env_json_1.default.botName,
+            iconURL: env_json_1.default.botIconUrl,
+        })
+            .setThumbnail(`attachment://${logoAttachment.name}`)
+            .setDescription(`Market close data from the last trading day`)
+            .addFields([
+            {
+                name: 'Close price',
+                value: `$${prevClose.c}`,
+                inline: true,
+            },
+            {
+                name: prevClose.c > prevClose.o ? 'Increase of' : 'Decrease of',
+                value: `$${(prevClose.c - prevClose.o).toFixed(2)}`,
+                inline: true,
+            },
+            {
+                name: '\u200B',
+                value: '\u200B',
+                inline: true,
+            },
+            {
+                name: 'Open price',
+                value: `$${prevClose.o}`,
+                inline: true,
+            },
+            {
+                name: 'High price',
+                value: `$${prevClose.h}`,
+                inline: true,
+            },
+            {
+                name: 'Low price',
+                value: `$${prevClose.l}`,
+                inline: true,
+            },
+            {
+                name: 'Volume',
+                value: `${prevClose.v.toLocaleString()} shares traded`,
+            },
+        ])
+            .setTimestamp();
+        interaction.reply({ embeds: [embed], files: [logoAttachment] });
     }
 }
 __decorate([

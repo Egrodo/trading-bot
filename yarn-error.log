@@ -2,7 +2,7 @@ Arguments:
   /home/noah/.nvm/versions/node/v18.3.0/bin/node /home/noah/.nvm/versions/node/v18.3.0/bin/yarn run build
 
 PATH: 
-  /home/noah/code/trading-bot/node_modules/.bin:/tmp/yarn--1688492872475-0.03597784553193484:/home/noah/code/trading-bot/node_modules/.bin:/home/noah/.config/yarn/link/node_modules/.bin:/home/noah/.yarn/bin:/home/noah/.nvm/versions/node/v18.3.0/libexec/lib/node_modules/npm/bin/node-gyp-bin:/home/noah/.nvm/versions/node/v18.3.0/lib/node_modules/npm/bin/node-gyp-bin:/home/noah/.nvm/versions/node/v18.3.0/bin/node_modules/npm/bin/node-gyp-bin:/home/noah/.vscode-server/bin/695af097c7bd098fbf017ce3ac85e09bbc5dda06/bin/remote-cli:/home/noah/.nvm/versions/node/v18.3.0/bin:/home/noah/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/snap/bin
+  /home/noah/code/trading-bot/node_modules/.bin:/tmp/yarn--1688707722204-0.7134133768822621:/home/noah/code/trading-bot/node_modules/.bin:/home/noah/.config/yarn/link/node_modules/.bin:/home/noah/.yarn/bin:/home/noah/.nvm/versions/node/v18.3.0/libexec/lib/node_modules/npm/bin/node-gyp-bin:/home/noah/.nvm/versions/node/v18.3.0/lib/node_modules/npm/bin/node-gyp-bin:/home/noah/.nvm/versions/node/v18.3.0/bin/node_modules/npm/bin/node-gyp-bin:/home/noah/.vscode-server/bin/695af097c7bd098fbf017ce3ac85e09bbc5dda06/bin/remote-cli:/home/noah/.nvm/versions/node/v18.3.0/bin:/home/noah/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/snap/bin
 
 Yarn version: 
   1.22.19

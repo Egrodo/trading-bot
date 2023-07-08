@@ -6,6 +6,7 @@
   "license": "MIT",
   "dependencies": {
     "@discordjs/core": "^0.6.0",
+    "@polygon.io/client-js": "^7.2.5",
     "discord.js": "^14.11.0"
   },
   "devDependencies": {
