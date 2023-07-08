@@ -96,7 +96,16 @@ class TradingCommandHandler {
       return;
     }
 
-    const quote = await PolygonApi.getPrevClosePriceData(ticker);
+    let quote;
+    try {
+      quote = await PolygonApi.getPrevClosePriceData(ticker);
+    } catch (err) {
+      interaction.reply({
+        content: `Error fetching price data, try again in a few minutes.`,
+        ephemeral: true,
+      });
+      return;
+    }
     if (quote.status !== 'OK') {
       ErrorReporter.reportErrorInDebugChannel(
         `Error fetching price data for ${ticker}`,
