@@ -11,6 +11,7 @@ import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
 import PolygonApi from '../classes/PolygonApi';
 import { CommandListType } from '../utils/types';
+import { ITickerDetails } from '@polygon.io/client-js';
 
 class TradingCommandHandler {
   public commands: CommandListType = {
@@ -70,14 +71,27 @@ class TradingCommandHandler {
   private async handlePriceCommand(
     interaction: CommandInteraction
   ): Promise<void> {
+    // Validate that the user actually sent a ticker
     const ticker = (
       interaction.options.get('ticker')?.value as string
     ).toUpperCase();
     if (!ticker) {
+      interaction.reply({
+        content: `Ticker is invalid.`,
+        ephemeral: true,
+      });
       ErrorReporter.reportErrorInDebugChannel(
         'Price command received with no ticker',
         interaction
       );
+      return;
+    }
+
+    if (!ticker.match(/[A-z]/g)) {
+      interaction.reply({
+        content: `Ticker ${ticker} is invalid. Ticker must be letters only.`,
+        ephemeral: true,
+      });
       return;
     }
 
@@ -103,13 +117,27 @@ class TradingCommandHandler {
 
     const prevClose = quote.results[0]; // For previous close, there should only be one result.
 
-    const companyInfoReq = await PolygonApi.getTickerInfo(ticker);
-    const { results: companyInfo } = companyInfoReq;
+    let companyInfoReq: null | ITickerDetails = null;
+    try {
+      companyInfoReq = await PolygonApi.getTickerInfo(ticker);
+    } catch (err) {
+      if (err.message !== 'Ticker not found.') {
+        ErrorReporter.reportErrorInDebugChannel(
+          `Error fetching company info for ${ticker}`,
+          err
+        );
+      }
+    }
+
+    let companyInfo;
+    if (companyInfoReq?.status === 'OK') {
+      companyInfo = companyInfoReq;
+    }
 
     // Compose data to display
-    const companyName = companyInfo.name ?? ticker;
-    const logoUrl = companyInfo.branding?.icon_url
-      ? `${companyInfo.branding.icon_url}?apiKey=${ENV.polygonKey}`
+    const companyName = companyInfo?.name ?? ticker;
+    const logoUrl = companyInfo?.branding?.icon_url
+      ? `${companyInfo?.branding.icon_url}?apiKey=${ENV.polygonKey}`
       : null;
 
     // If the stock was up for the day, show green. Otherwise show red
@@ -118,7 +146,6 @@ class TradingCommandHandler {
     const embed = new EmbedBuilder()
       .setColor(color)
       .setTitle(companyName)
-      .setURL(companyInfo.homepage_url)
       .setAuthor({
         name: ENV.botName,
         iconURL: ENV.botIconUrl,
@@ -162,6 +189,10 @@ class TradingCommandHandler {
       ])
       .setTimestamp();
 
+    if (companyInfo?.homepage_url) {
+      embed.setURL(companyInfo.homepage_url);
+    }
+
     const reply = { embeds: [embed], files: [] };
     let logoAttachment;
     if (logoUrl) {
@@ -171,6 +202,7 @@ class TradingCommandHandler {
       embed.setThumbnail(`attachment://${logoAttachment.name}`);
       reply.files.push(logoAttachment);
     }
+
     interaction.reply(reply);
   }
 }
