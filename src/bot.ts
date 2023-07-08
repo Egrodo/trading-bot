@@ -72,7 +72,7 @@ async function CommandRouter(interaction: Interaction) {
   }
   const { commandName } = interaction;
 
-  console.log('Received command: ', commandName);
+  console.count(`Handling ${commandName} command`);
 
   if (TradingCommandHandler.commands.hasOwnProperty(commandName)) {
     return TradingCommandHandler.onMessage(interaction);

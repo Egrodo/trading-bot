@@ -87,9 +87,10 @@ class TradingCommandHandler {
       return;
     }
 
-    if (!ticker.match(/[A-z]/g)) {
+    const validRegex = new RegExp(/^[A-z]{1,5}$/g);
+    if (!validRegex.test(ticker)) {
       interaction.reply({
-        content: `Ticker ${ticker} is invalid. Ticker must be letters only.`,
+        content: `Ticker ${ticker} is invalid. Ticker must be 1-5 English letters only.`,
         ephemeral: true,
       });
       return;
