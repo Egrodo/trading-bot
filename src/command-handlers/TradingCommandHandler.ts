@@ -79,7 +79,7 @@ class TradingCommandHandler {
     interaction: CommandInteraction
   ): Promise<void> {
     const ticker = (
-      interaction.options.get('ticker').value as string
+      interaction.options.get('ticker')?.value as string
     ).toUpperCase();
     if (!ticker) {
       ErrorReporter.reportErrorInDebugChannel(

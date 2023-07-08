@@ -65,7 +65,7 @@ class TradingCommandHandler {
         }
     }
     async handlePriceCommand(interaction) {
-        const ticker = interaction.options.get('ticker').value.toUpperCase();
+        const ticker = (interaction.options.get('ticker')?.value).toUpperCase();
         if (!ticker) {
             ErrorReporter_1.default.reportErrorInDebugChannel('Price command received with no ticker', interaction);
             return;

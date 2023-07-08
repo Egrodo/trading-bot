@@ -33,15 +33,23 @@ client.once(Events.ClientReady, start);
 async function start() {
   console.log(`Logged in as ${client.user.tag}!`);
 
+  console.log(`Resetting commands...`);
+  // Reset commands
+  await client.application.commands.set([]);
+
+  const guild = await client.guilds.fetch(ENV.guildId);
+  await guild.commands.set([]);
+
   // Register commands
   const TradingCommands = formatSlashCommands(TradingCommandHandler.commands);
   const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
-  const data: any = await rest.put(
-    Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
-    { body: [...TradingCommands, ...BotStatusCommands] }
-  );
+  const data = await guild.commands.set([
+    ...TradingCommands,
+    ...BotStatusCommands,
+  ]);
+
   console.log(
-    `Successfully reloaded ${data.length ?? 0} application (/) commands.`
+    `Successfully reloaded ${data.size ?? 0} application (/) commands.`
   );
 
   // Initialize command handlers

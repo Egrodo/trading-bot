@@ -37,10 +37,17 @@ const rest = new discord_js_1.REST().setToken(ENV.token);
 client.once(discord_js_1.Events.ClientReady, start);
 async function start() {
     console.log(`Logged in as ${client.user.tag}!`);
+    console.log(`Resetting commands...`);
+    await client.application.commands.set([]);
+    const guild = await client.guilds.fetch(ENV.guildId);
+    await guild.commands.set([]);
     const TradingCommands = (0, slashCommandBuilder_1.formatSlashCommands)(TradingCommandHandler_1.default.commands);
     const BotStatusCommands = (0, slashCommandBuilder_1.formatSlashCommands)(BotStatusHandler_1.default.commands);
-    const data = await rest.put(discord_js_1.Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId), { body: [...TradingCommands, ...BotStatusCommands] });
-    console.log(`Successfully reloaded ${data.length ?? 0} application (/) commands.`);
+    const data = await guild.commands.set([
+        ...TradingCommands,
+        ...BotStatusCommands,
+    ]);
+    console.log(`Successfully reloaded ${data.size ?? 0} application (/) commands.`);
     TradingCommandHandler_1.default.init(client);
     ErrorReporter_1.default.init(client);
     client.on(discord_js_1.Events.InteractionCreate, CommandRouter);
