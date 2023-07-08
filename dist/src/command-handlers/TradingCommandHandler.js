@@ -90,10 +90,8 @@ class TradingCommandHandler {
         const companyInfoReq = await PolygonApi_1.default.getTickerInfo(ticker);
         const { results: companyInfo } = companyInfoReq;
         const companyName = companyInfo.name ?? ticker;
-        const logoUrl = `${companyInfo.branding.icon_url}?apiKey=${env_json_1.default.polygonKey}`;
-        const logoAttachment = new discord_js_1.AttachmentBuilder(logoUrl, {
-            name: `${ticker}-logo.png`,
-        });
+        const logoUrl = companyInfo.branding?.icon_url &&
+            `${companyInfo.branding.icon_url}?apiKey=${env_json_1.default.polygonKey}`;
         const color = prevClose.c > prevClose.o ? '#00FF00' : '#FF0000';
         const embed = new discord_js_1.EmbedBuilder()
             .setColor(color)
@@ -103,7 +101,6 @@ class TradingCommandHandler {
             name: env_json_1.default.botName,
             iconURL: env_json_1.default.botIconUrl,
         })
-            .setThumbnail(`attachment://${logoAttachment.name}`)
             .setDescription(`Market close data from the last trading day`)
             .addFields([
             {
@@ -142,6 +139,13 @@ class TradingCommandHandler {
             },
         ])
             .setTimestamp();
+        let logoAttachment;
+        if (logoUrl) {
+            logoAttachment = new discord_js_1.AttachmentBuilder(logoUrl, {
+                name: `${ticker}-logo.png`,
+            });
+            embed.setThumbnail(`attachment://${logoAttachment.name}`);
+        }
         interaction.reply({ embeds: [embed], files: [logoAttachment] });
     }
 }

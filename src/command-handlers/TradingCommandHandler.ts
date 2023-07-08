@@ -116,10 +116,10 @@ class TradingCommandHandler {
 
     // Compose data to display
     const companyName = companyInfo.name ?? ticker;
-    const logoUrl = `${companyInfo.branding.icon_url}?apiKey=${ENV.polygonKey}`;
-    const logoAttachment = new AttachmentBuilder(logoUrl, {
-      name: `${ticker}-logo.png`,
-    });
+    const logoUrl = companyInfo.branding?.icon_url
+      ? `${companyInfo.branding.icon_url}?apiKey=${ENV.polygonKey}`
+      : null;
+
     // If the stock was up for the day, show green. Otherwise show red
     const color = prevClose.c > prevClose.o ? '#00FF00' : '#FF0000';
 
@@ -131,7 +131,6 @@ class TradingCommandHandler {
         name: ENV.botName,
         iconURL: ENV.botIconUrl,
       })
-      .setThumbnail(`attachment://${logoAttachment.name}`)
       .setDescription(`Market close data from the last trading day`)
       .addFields([
         {
@@ -170,6 +169,14 @@ class TradingCommandHandler {
         },
       ])
       .setTimestamp();
+
+    let logoAttachment;
+    if (logoUrl) {
+      logoAttachment = new AttachmentBuilder(logoUrl, {
+        name: `${ticker}-logo.png`,
+      });
+      embed.setThumbnail(`attachment://${logoAttachment.name}`);
+    }
     interaction.reply({ embeds: [embed], files: [logoAttachment] });
   }
 }
