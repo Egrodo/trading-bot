@@ -89,8 +89,18 @@ class TradingCommandHandler {
       return;
     }
 
-    // TODO: Format it all pretty-like & include more info
     const quote = await PolygonApi.getPrevClosePriceData(ticker);
+    if (quote.status !== 'OK') {
+      ErrorReporter.reportErrorInDebugChannel(
+        `Error fetching price data for ${ticker}`,
+        interaction
+      );
+      interaction.reply({
+        content: `Error fetching price data, try again in a few minutes.`,
+        ephemeral: true,
+      });
+      return;
+    }
     if (quote.resultsCount === 0) {
       interaction.reply({
         content: `No stock found with ticker ${ticker}.`,
