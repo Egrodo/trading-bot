@@ -170,14 +170,16 @@ class TradingCommandHandler {
       ])
       .setTimestamp();
 
+    const reply = { embeds: [embed], files: [] };
     let logoAttachment;
     if (logoUrl) {
       logoAttachment = new AttachmentBuilder(logoUrl, {
         name: `${ticker}-logo.png`,
       });
       embed.setThumbnail(`attachment://${logoAttachment.name}`);
+      reply.files.push(logoAttachment);
     }
-    interaction.reply({ embeds: [embed], files: [logoAttachment] });
+    interaction.reply(reply);
   }
 }
 
