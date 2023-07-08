@@ -1,4 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
+import { CommandListType } from './types';
 
 export function formatSlashCommands(
   commands: CommandListType

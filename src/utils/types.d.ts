@@ -1,7 +1,10 @@
+import { CommandInteraction } from 'discord.js';
+
 declare type CommandListType = {
   [commandName: string]: {
     description: string;
     allowedChannel: string;
+    handler: (interaction: CommandInteraction) => Promise<void>;
     options?: {
       name: string;
       description: string;

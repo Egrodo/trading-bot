@@ -10,12 +10,14 @@ import { Guard } from '../utils/helpers';
 import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
 import PolygonApi from '../classes/PolygonApi';
+import { CommandListType } from '../utils/types';
 
 class TradingCommandHandler {
   public commands: CommandListType = {
     price: {
       description: 'Check the price of a stock',
       allowedChannel: ENV.tradingChannelId,
+      handler: this.handlePriceCommand.bind(this),
       options: [
         {
           name: 'ticker',
@@ -52,27 +54,17 @@ class TradingCommandHandler {
 
   @Guard()
   public async onMessage(interaction: CommandInteraction): Promise<void> {
-    const { commandName } = interaction;
-
     // Ensure that the command is only used in the proper channel.
-    if (
-      !this.commands[commandName].allowedChannel.includes(interaction.channelId)
-    ) {
+    const localCommand = this.commands[interaction.commandName];
+    if (!localCommand.allowedChannel.includes(interaction.channelId)) {
       interaction.reply({
-        content: `This command is only available in <#${this.commands[
-          commandName
-        ].allowedChannel.toString()}>`,
+        content: `This command is only available in <#${localCommand.allowedChannel.toString()}>`,
         ephemeral: true,
       });
       return;
     }
 
-    switch (commandName) {
-      case 'price':
-        return this.handlePriceCommand(interaction);
-      default:
-        interaction.reply('No command with that name found?');
-    }
+    return localCommand.handler(interaction);
   }
 
   private async handlePriceCommand(

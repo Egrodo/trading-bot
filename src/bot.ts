@@ -24,6 +24,7 @@ import { formatSlashCommands } from './utils/slashCommandBuilder';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
+let guild = null;
 
 // const limitedMessageHandler = rateLimiter(COMMAND_COOLDOWN, MessageRouter);
 
@@ -33,34 +34,35 @@ client.once(Events.ClientReady, start);
 async function start() {
   console.log(`Logged in as ${client.user.tag}!`);
 
-  console.log(`Resetting commands...`);
-  // Reset commands
-  await client.application.commands.set([]);
+  guild = await client.guilds.fetch(ENV.guildId);
+  console.log(`Guild fetched: ${guild.name} (${guild.id})`);
 
-  const guild = await client.guilds.fetch(ENV.guildId);
-  await guild.commands.set([]);
-
-  // Register commands
-  const TradingCommands = formatSlashCommands(TradingCommandHandler.commands);
-  const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
-  const data = await guild.commands.set([
-    ...TradingCommands,
-    ...BotStatusCommands,
-  ]);
-
+  console.log('Registering commands...');
+  const data = await registerCommands();
   console.log(
-    `Successfully reloaded ${data.size ?? 0} application (/) commands.`
+    `Successfully registered ${data.length ?? 0} application (/) commands.`
   );
 
   // Initialize command handlers
+  console.log('Initializing listeners...');
+  BotStatusHandler.init(client, guild);
   TradingCommandHandler.init(client);
   ErrorReporter.init(client);
 
   client.on(Events.InteractionCreate, CommandRouter);
-  // client.on("message", limitedMessageHandler);
-  // ErrorReporterInit(client);
-  // OutgoingMessageHandlerInit(client);
-  // IEXCloudApisInit(AUTH.iexKey);
+  console.log('Ready!');
+}
+
+export async function registerCommands(): Promise<Array<unknown>> {
+  // Register commands
+  const TradingCommands = formatSlashCommands(TradingCommandHandler.commands);
+  const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
+  const data: any = await rest.put(
+    Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
+    { body: [...TradingCommands, ...BotStatusCommands] }
+  );
+
+  return data;
 }
 
 async function CommandRouter(interaction: Interaction) {
