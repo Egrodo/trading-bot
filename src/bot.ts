@@ -21,6 +21,7 @@ import TradingCommandHandler from './command-handlers/TradingCommandHandler';
 import BotStatusHandler from './command-handlers/BotStatusHandler';
 import ErrorReporter from './utils/ErrorReporter';
 import { formatSlashCommands } from './utils/slashCommandBuilder';
+import DatabaseManager from './classes/DatabaseManager';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
@@ -43,11 +44,13 @@ async function start() {
     `Successfully registered ${data.length ?? 0} application (/) commands.`
   );
 
-  // Initialize command handlers
   console.log('Initializing listeners...');
   BotStatusHandler.init(client, guild);
   TradingCommandHandler.init(client);
   ErrorReporter.init(client);
+
+  console.log('Connecting to db...');
+  DatabaseManager.init();
 
   client.on(Events.InteractionCreate, CommandRouter);
   console.log('Ready!');
@@ -72,7 +75,7 @@ async function CommandRouter(interaction: Interaction) {
   }
   const { commandName } = interaction;
 
-  console.count(`Handling ${commandName} command`);
+  console.count(`Received ${commandName} command`);
 
   if (TradingCommandHandler.commands.hasOwnProperty(commandName)) {
     return TradingCommandHandler.onMessage(interaction);

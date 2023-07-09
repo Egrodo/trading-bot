@@ -11,7 +11,8 @@ import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
 import PolygonApi from '../classes/PolygonApi';
 import { CommandListType } from '../utils/types';
-import { ITickerDetails } from '@polygon.io/client-js';
+import { IAggsPreviousClose, IAggsResults } from '@polygon.io/client-js';
+import DatabaseManager from '../classes/DatabaseManager';
 
 class TradingCommandHandler {
   public commands: CommandListType = {
@@ -68,6 +69,55 @@ class TradingCommandHandler {
     return localCommand.handler(interaction);
   }
 
+  /* Get price info either from the cache or from Polygon API */
+  private async fetchPriceInfo(
+    ticker: string,
+    interaction: CommandInteraction
+  ): Promise<IAggsResults> {
+    const cachedPriceInfo = await DatabaseManager.getCachedPrice(ticker);
+    if (cachedPriceInfo) {
+      console.log(`Found cached price data for ${ticker}`);
+      return cachedPriceInfo;
+    }
+    let quote: IAggsPreviousClose;
+    try {
+      console.log(`Requesting price data for ${ticker}`);
+      quote = await PolygonApi.getPrevClosePriceData(ticker);
+    } catch (err) {
+      interaction.reply({
+        content: `Error fetching price data, try again in a few minutes.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    if (quote.status !== 'OK') {
+      ErrorReporter.reportErrorInDebugChannel(
+        `Error fetching price data for ${ticker}`,
+        interaction
+      );
+      interaction.reply({
+        content: `Error fetching price data, try again in a few minutes.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    if (quote.resultsCount === 0 || !quote.results?.length) {
+      interaction.reply({
+        content: `No stock found with ticker ${ticker}.`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const results = quote.results[0];
+
+    // If we got valid data, cache it
+    console.log(`Caching price data for ${ticker}`);
+    DatabaseManager.setCachedStockInfo(ticker, results);
+
+    return results;
+  }
+
   private async handlePriceCommand(
     interaction: CommandInteraction
   ): Promise<void> {
@@ -96,36 +146,8 @@ class TradingCommandHandler {
       return;
     }
 
-    let quote;
-    try {
-      quote = await PolygonApi.getPrevClosePriceData(ticker);
-    } catch (err) {
-      interaction.reply({
-        content: `Error fetching price data, try again in a few minutes.`,
-        ephemeral: true,
-      });
-      return;
-    }
-    if (quote.status !== 'OK') {
-      ErrorReporter.reportErrorInDebugChannel(
-        `Error fetching price data for ${ticker}`,
-        interaction
-      );
-      interaction.reply({
-        content: `Error fetching price data, try again in a few minutes.`,
-        ephemeral: true,
-      });
-      return;
-    }
-    if (quote.resultsCount === 0) {
-      interaction.reply({
-        content: `No stock found with ticker ${ticker}.`,
-        ephemeral: true,
-      });
-      return;
-    }
-
-    const prevClose = quote.results[0]; // For previous close, there should only be one result.
+    const prevClose = await this.fetchPriceInfo(ticker, interaction);
+    if (!prevClose) return;
 
     let companyInfo;
     try {
@@ -142,7 +164,6 @@ class TradingCommandHandler {
       }
     }
 
-    console.log(companyInfo);
     // Compose data to display
     const companyName = companyInfo?.name ?? ticker;
     const logoUrl = companyInfo?.branding?.icon_url

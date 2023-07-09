@@ -6,7 +6,7 @@ export function Guard() {
   return function (
     target: any,
     methodName: string,
-    descriptor: PropertyDescriptor,
+    descriptor: PropertyDescriptor
   ) {
     const originalMethod = descriptor.value;
     descriptor.value = function (...args: any[]) {
@@ -14,12 +14,43 @@ export function Guard() {
         return originalMethod.apply(this, args);
       } else {
         throw new Error(
-          `Cannot use ${target.constructor.name} until it has been init'd with client`,
+          `Cannot use ${target.constructor.name} until it has been init'd with client`
         );
       }
     };
     return descriptor;
   };
+}
+
+export function getNextStockMarketOpeningTimestamp(): number {
+  const now = new Date();
+  const nextOpening = new Date(now);
+
+  // Set the opening time to 9:30 AM Eastern Time (ET)
+  nextOpening.setHours(9);
+  nextOpening.setMinutes(30);
+  nextOpening.setSeconds(0);
+  nextOpening.setMilliseconds(0);
+
+  // If the market is already open, move to the next trading day
+  if (nextOpening.getTime() - now.getTime() <= 0) {
+    nextOpening.setDate(nextOpening.getDate() + 1);
+  }
+
+  // Move to the next Monday if the current day is a weekend
+  while (nextOpening.getDay() === 0 || nextOpening.getDay() === 6) {
+    nextOpening.setDate(nextOpening.getDate() + 1);
+  }
+
+  // Set the opening time to 9:30 AM Eastern Time (ET) for the next trading day
+  nextOpening.setHours(9);
+  nextOpening.setMinutes(30);
+  nextOpening.setSeconds(0);
+  nextOpening.setMilliseconds(0);
+
+  // Get the Unix timestamp in seconds
+  const unixTimestamp = Math.floor(nextOpening.getTime() / 1000);
+  return unixTimestamp;
 }
 
 // export default {

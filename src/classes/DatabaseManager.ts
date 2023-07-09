@@ -1,3 +1,75 @@
+import { RedisClientType, createClient } from 'redis';
+import ErrorReporter from '../utils/ErrorReporter';
+import * as ENV from '../../env.json';
+import { IAggsPreviousClose, IAggsResults } from '@polygon.io/client-js';
+import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
+
+/**
+ * Database design docs:
+ *
+ * Stock data:
+ *   - Stored using Redis Strings type
+ *   - `.results` from the Polygon API is stored as a stringified JSON object
+ *   - Considered ephemeral and is set to expire at the next market open.
+ *
+ * User data:
+ *   - Stored using Redis JSON type
+ *   - TODO:
+ */
+
+class DatabaseManager {
+  _dbClient: RedisClientType;
+  async init(): Promise<void> {
+    const { dbUrl, dbUser, dbPass } = ENV;
+
+    this._dbClient = createClient({
+      url: `redis://${dbUser}:${dbPass}@${dbUrl}`,
+    });
+    this._dbClient.on('error', this.handleError.bind(this));
+    await this._dbClient.connect();
+    console.log('Connected to database');
+  }
+
+  private handleError(err) {
+    console.error(err);
+    ErrorReporter.reportErrorInDebugChannel('Database error', err);
+  }
+
+  public async getCachedPrice(ticker: string): Promise<IAggsResults> {
+    try {
+      const reply = await this._dbClient.get(`stock:${ticker}`);
+      const results: IAggsResults = JSON.parse(reply);
+      return results;
+    } catch (err) {
+      console.error(err);
+      ErrorReporter.reportErrorInDebugChannel('Database error', err);
+    }
+    // return new Promise((resolve, reject) => {
+    //   this._dbClient.get(`stock:${ticker}`, (err, reply) => {
+    //     if (err) {
+    //       reject(err);
+    //     } else {
+    //       const parsed = JSON.parse(reply);
+    //       resolve(parsed?.results[0]);
+    //     }
+    //   });
+    // });
+  }
+
+  public async setCachedStockInfo(
+    ticker: string,
+    results: IAggsResults
+  ): Promise<void> {
+    const expireTime = getNextStockMarketOpeningTimestamp();
+    const stringified = JSON.stringify(results);
+    this._dbClient.set(`stock:${ticker}`, stringified, {
+      EXAT: expireTime,
+    });
+  }
+}
+
+export default new DatabaseManager();
+
 // import { User } from 'discord.js';
 // import v8 from 'v8';
 // import Nano, { ServerScope, DocumentScope, DocumentGetResponse } from 'nano';
