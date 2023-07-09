@@ -53,6 +53,14 @@ export function getNextStockMarketOpeningTimestamp(): number {
   return unixTimestamp;
 }
 
+export function formatAmountToReadable(balance: number): string {
+  if (balance < 0) {
+    return `-$${Math.abs(balance / 100).toLocaleString()}`;
+  }
+  const dollarified = Math.round((balance / 100 + Number.EPSILON) * 100) / 100;
+  return `$${dollarified.toLocaleString()}`;
+}
+
 // export default {
 //   // User specific debouncer. NOTE: Potential memory leak here if runs too long without clearing userMap.
 //   rateLimiter: (delay: number, fn: Function): (msg: Message) => void => {

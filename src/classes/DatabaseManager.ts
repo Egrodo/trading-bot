@@ -3,6 +3,7 @@ import ErrorReporter from '../utils/ErrorReporter';
 import * as ENV from '../../env.json';
 import { IAggsPreviousClose, IAggsResults } from '@polygon.io/client-js';
 import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
+import { UserAccount } from '../utils/types';
 
 /**
  * Database design docs:
@@ -41,19 +42,11 @@ class DatabaseManager {
       const results: IAggsResults = JSON.parse(reply);
       return results;
     } catch (err) {
-      console.error(err);
-      ErrorReporter.reportErrorInDebugChannel('Database error', err);
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to get cached price',
+        err
+      );
     }
-    // return new Promise((resolve, reject) => {
-    //   this._dbClient.get(`stock:${ticker}`, (err, reply) => {
-    //     if (err) {
-    //       reject(err);
-    //     } else {
-    //       const parsed = JSON.parse(reply);
-    //       resolve(parsed?.results[0]);
-    //     }
-    //   });
-    // });
   }
 
   public async setCachedStockInfo(
@@ -65,6 +58,44 @@ class DatabaseManager {
     this._dbClient.set(`stock:${ticker}`, stringified, {
       EXAT: expireTime,
     });
+  }
+
+  public async getAccount(userId: string, seasonId: string): Promise<any> {
+    try {
+      const reply = await this._dbClient.json.get(`user:${userId}:${seasonId}`);
+      return reply;
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to get user document',
+        err
+      );
+    }
+  }
+
+  /* Stores user data keyed to the current season ID */
+  public async registerAccount(
+    userId: string,
+    startingBalance: number,
+    seasonId: string
+  ): Promise<void> {
+    const user = {
+      balance: startingBalance,
+      currentHoldings: {},
+      tradeHistory: [],
+      signupTs: Date.now(),
+    };
+
+    try {
+      await this._dbClient.json.set(`user:${userId}:${seasonId}`, '$', user, {
+        NX: true,
+      });
+    } catch (err) {
+      console.log(err);
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to add user document',
+        err
+      );
+    }
   }
 }
 
@@ -82,7 +113,7 @@ export default new DatabaseManager();
 
 // const DB_URL = `http://${dbUser}:${dbPass}@174.138.58.238:5984`;
 
-// // This represents the up-to-date account of any given stock
+// // This represents the up-to-date aunccot of any given stock
 // export interface StockHolding {
 //   companyName?: string;
 //   amountOwned: number;

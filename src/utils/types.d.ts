@@ -1,6 +1,6 @@
 import { CommandInteraction } from 'discord.js';
 
-declare type CommandListType = {
+declare interface CommandListType {
   [commandName: string]: {
     description: string;
     allowedChannel: string;
@@ -14,4 +14,25 @@ declare type CommandListType = {
       minLength?: number; // Enforced for `string` types
     }[];
   };
-};
+}
+
+export interface UserAccount {
+  balance: number; // Total balance represented in cents
+  currentHoldings: { [tickerKey: string]: StockHolding };
+  tradeHistory: PastTrade[];
+  signupTs: number;
+}
+
+/* Information about a single stock that a user owns */
+export interface StockHolding {
+  companyName?: string;
+  amountOwned: number;
+}
+
+export interface PastTrade {
+  ticker: string;
+  timestamp: number;
+  price: number;
+  transactionType: 'buy' | 'sell';
+  amountTraded: number;
+}
