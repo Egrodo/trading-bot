@@ -4,9 +4,9 @@ import { registerCommands } from '../bot';
 import { CommandListType } from '../utils/types';
 import { Guard } from '../utils/helpers';
 import ErrorReporter from '../utils/ErrorReporter';
+import BaseCommentHandler from './BaseCommandHandler';
 
-class BotStatusHandler {
-  private _client: Client;
+class BotStatusHandler extends BaseCommentHandler {
   private _guild: Guild;
   public commands: CommandListType = {
     ping: {
@@ -23,26 +23,9 @@ class BotStatusHandler {
     },
   };
 
-  init(client: Client, guild: Guild) {
-    if (!client) throw new Error('Client is undefined');
-    if (!guild) throw new Error('Guild is undefined');
-    this._client = client;
+  public initWithGuild(client: Client, guild: Guild) {
+    super.init(client);
     this._guild = guild;
-  }
-
-  @Guard()
-  public async onMessage(interaction: CommandInteraction): Promise<void> {
-    // Ensure that the command is only used in the proper channel.
-    const localCommand = this.commands[interaction.commandName];
-    if (!localCommand.allowedChannel.includes(interaction.channelId)) {
-      interaction.reply({
-        content: `This command is only available in <#${localCommand.allowedChannel.toString()}>`,
-        ephemeral: true,
-      });
-      return;
-    }
-
-    return localCommand.handler(interaction);
   }
 
   private ping(interaction: CommandInteraction) {

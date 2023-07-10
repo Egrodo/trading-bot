@@ -6,16 +6,16 @@ import {
   EmbedBuilder,
   TextChannel,
 } from 'discord.js';
-import { Guard, formatAmountToReadable } from '../utils/helpers';
+import { Guard } from '../utils/helpers';
 import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
 import PolygonApi from '../classes/PolygonApi';
 import { CommandListType } from '../utils/types';
 import { IAggsPreviousClose, IAggsResults } from '@polygon.io/client-js';
 import DatabaseManager from '../classes/DatabaseManager';
-import messages from '../static/messages';
+import BaseCommentHandler from './BaseCommandHandler';
 
-class TradingCommandHandler {
+class TradingCommandHandler extends BaseCommentHandler {
   public commands: CommandListType = {
     price: {
       description: 'Check the price of a stock',
@@ -32,24 +32,11 @@ class TradingCommandHandler {
         },
       ],
     },
-    signup: {
-      description: "Sign up for the current season's trading competition",
-      allowedChannel: ENV.tradingChannelId,
-      handler: this.handleSignupCommand.bind(this),
-    },
-    account: {
-      description: 'Check your account information',
-      allowedChannel: ENV.tradingChannelId,
-      handler: this.handleAccountCommand.bind(this),
-    },
   };
-  private _client: Client;
 
   private _tradingChannel: TextChannel;
   init(client: Client) {
-    if (!client) throw new Error('Client is undefined');
-    this._client = client;
-
+    super.init(client);
     this.fetchTradingChannel();
   }
 
@@ -62,21 +49,6 @@ class TradingCommandHandler {
         'Trading channel is not a text channel'
       );
     }
-  }
-
-  @Guard()
-  public async onMessage(interaction: CommandInteraction): Promise<void> {
-    // Ensure that the command is only used in the proper channel.
-    const localCommand = this.commands[interaction.commandName];
-    if (!localCommand.allowedChannel.includes(interaction.channelId)) {
-      interaction.reply({
-        content: `This command is only available in <#${localCommand.allowedChannel.toString()}>`,
-        ephemeral: true,
-      });
-      return;
-    }
-
-    return localCommand.handler(interaction);
   }
 
   /* Get price info either from the cache or from Polygon API */
@@ -248,26 +220,6 @@ class TradingCommandHandler {
     }
 
     interaction.reply(reply);
-  }
-
-  public async handleSignupCommand(interaction: CommandInteraction) {
-    const user = interaction.user;
-    const startingBalance = 1000 * 100; // $1,000 bux
-    const season = 'season1';
-    DatabaseManager.registerAccount(user.id, startingBalance, season);
-  }
-
-  public async handleAccountCommand(interaction: CommandInteraction) {
-    const user = interaction.user;
-    const season = 'season1';
-    const account = await DatabaseManager.getAccount(user.id, season);
-    if (!account) {
-      interaction.reply({ content: messages.noAccount, ephemeral: true });
-      return;
-    }
-
-    const humanReadable = formatAmountToReadable(account.balance);
-    interaction.reply(`You have ${humanReadable} bux`);
   }
 }
 

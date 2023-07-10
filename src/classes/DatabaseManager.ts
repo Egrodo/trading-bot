@@ -1,10 +1,10 @@
 import { RedisClientType, createClient } from 'redis';
 import ErrorReporter from '../utils/ErrorReporter';
 import * as ENV from '../../env.json';
-import { IAggsPreviousClose, IAggsResults } from '@polygon.io/client-js';
+import { IAggsResults } from '@polygon.io/client-js';
 import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
+import { Schema } from 'redis-om';
 import { UserAccount } from '../utils/types';
-
 /**
  * Database design docs:
  *
@@ -60,10 +60,16 @@ class DatabaseManager {
     });
   }
 
-  public async getAccount(userId: string, seasonId: string): Promise<any> {
+  public async getAccount(
+    userId: string,
+    seasonId: string
+  ): Promise<UserAccount> {
     try {
       const reply = await this._dbClient.json.get(`user:${userId}:${seasonId}`);
-      return reply;
+      if (reply == null) {
+        return null;
+      }
+      return reply as unknown as UserAccount;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
         'Database Error: Failed to get user document',
@@ -90,11 +96,11 @@ class DatabaseManager {
         NX: true,
       });
     } catch (err) {
-      console.log(err);
       ErrorReporter.reportErrorInDebugChannel(
         'Database Error: Failed to add user document',
         err
       );
+      throw err;
     }
   }
 }

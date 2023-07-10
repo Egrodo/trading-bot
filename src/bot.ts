@@ -17,11 +17,12 @@ import {
   Routes,
 } from 'discord.js';
 
-import TradingCommandHandler from './command-handlers/TradingCommandHandler';
+import TradingHandler from './command-handlers/TradingHandler';
 import BotStatusHandler from './command-handlers/BotStatusHandler';
 import ErrorReporter from './utils/ErrorReporter';
 import { formatSlashCommands } from './utils/slashCommandBuilder';
 import DatabaseManager from './classes/DatabaseManager';
+import UserAccountManager from './command-handlers/UserAccountHandler';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
@@ -45,9 +46,10 @@ async function start() {
   );
 
   console.log('Initializing listeners...');
-  BotStatusHandler.init(client, guild);
-  TradingCommandHandler.init(client);
+  BotStatusHandler.initWithGuild(client, guild);
+  TradingHandler.init(client);
   ErrorReporter.init(client);
+  UserAccountManager.init(client);
 
   console.log('Connecting to db...');
   DatabaseManager.init();
@@ -58,11 +60,12 @@ async function start() {
 
 export async function registerCommands(): Promise<Array<unknown>> {
   // Register commands
-  const TradingCommands = formatSlashCommands(TradingCommandHandler.commands);
+  const TradingCommands = formatSlashCommands(TradingHandler.commands);
   const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
+  const UserAccountHandler = formatSlashCommands(UserAccountManager.commands);
   const data: any = await rest.put(
     Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
-    { body: [...TradingCommands, ...BotStatusCommands] }
+    { body: [...TradingCommands, ...BotStatusCommands, ...UserAccountHandler] }
   );
 
   return data;
@@ -77,11 +80,14 @@ async function CommandRouter(interaction: Interaction) {
 
   console.count(`Received ${commandName} command`);
 
-  if (TradingCommandHandler.commands.hasOwnProperty(commandName)) {
-    return TradingCommandHandler.onMessage(interaction);
+  if (TradingHandler.commands.hasOwnProperty(commandName)) {
+    return TradingHandler.onMessage(interaction);
   }
   if (BotStatusHandler.commands.hasOwnProperty(commandName)) {
     return BotStatusHandler.onMessage(interaction);
+  }
+  if (UserAccountManager.commands.hasOwnProperty(commandName)) {
+    return UserAccountManager.onMessage(interaction);
   }
 }
 
