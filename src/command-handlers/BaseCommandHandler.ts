@@ -1,5 +1,5 @@
-import { Client, CommandInteraction } from 'discord.js';
-import { CommandListType } from '../utils/types';
+import { Client, ChatInputCommandInteraction } from 'discord.js';
+import { CommandListType, CommandWithSubCommandsType } from '../utils/types';
 
 class BaseCommentHandler {
   public commands: CommandListType = {};
@@ -10,8 +10,11 @@ class BaseCommentHandler {
     this._client = client;
   }
 
-  public async onMessage(interaction: CommandInteraction): Promise<void> {
+  public async onMessage(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     // Ensure that the command is only used in the proper channel.
+
     const localCommand = this.commands[interaction.commandName];
     if (!localCommand.allowedChannel.includes(interaction.channelId)) {
       interaction.reply({
@@ -21,7 +24,18 @@ class BaseCommentHandler {
       return;
     }
 
-    return localCommand.handler(interaction);
+    let commandHandler;
+
+    const subCommand = interaction.options.getSubcommand();
+    if (subCommand) {
+      commandHandler = (localCommand as CommandWithSubCommandsType).subCommands[
+        subCommand
+      ].handler;
+    } else {
+      commandHandler = localCommand.handler;
+    }
+
+    return commandHandler(interaction);
   }
 }
 

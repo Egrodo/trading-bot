@@ -1,19 +1,43 @@
 import { CommandInteraction } from 'discord.js';
 
-declare interface CommandListType {
-  [commandName: string]: {
+export interface IAggsResults {
+  T?: string;
+  c?: number;
+  h?: number;
+  l?: number;
+  n?: number;
+  o?: number;
+  t?: number;
+  v?: number;
+  vw?: number;
+}
+
+export interface CommandType {
+  description: string;
+  allowedChannel: string;
+  handler?: (interaction: CommandInteraction) => Promise<void>; // undefined if subcommands are present
+}
+
+export interface CommandWithOptionsType extends CommandType {
+  options: {
+    name: string;
     description: string;
-    allowedChannel: string;
-    handler: (interaction: CommandInteraction) => Promise<void>;
-    options?: {
-      name: string;
-      description: string;
-      type: 'string' | 'number' | 'boolean' | 'integer';
-      required: boolean;
-      maxLength?: number; // Enforced for `string` types
-      minLength?: number; // Enforced for `string` types
-    }[];
-  };
+    type: 'string' | 'number' | 'boolean' | 'integer';
+    required: boolean;
+    maxLength?: number; // Enforced for `string` types
+    minLength?: number; // Enforced for `string` types
+  }[];
+}
+
+export interface CommandWithSubCommandsType extends CommandType {
+  subCommands: { [commandName: string]: CommandType | CommandWithOptionsType };
+}
+
+export interface CommandListType {
+  [commandName: string]:
+    | CommandType
+    | CommandWithOptionsType
+    | CommandWithSubCommandsType;
 }
 
 export interface UserAccount {
@@ -35,4 +59,10 @@ export interface PastTrade {
   price: number;
   transactionType: 'buy' | 'sell';
   amountTraded: number;
+}
+
+export interface SeasonDocument {
+  name: string;
+  start: number;
+  end: number;
 }

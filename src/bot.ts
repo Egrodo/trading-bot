@@ -7,7 +7,7 @@ import * as ENV from '../env.json';
 // const COMMAND_COOLDOWN = 1.5 * 1000;
 
 import {
-  APIInteraction,
+  ChatInputCommandInteraction,
   Client,
   Events,
   GatewayIntentBits,
@@ -23,6 +23,7 @@ import ErrorReporter from './utils/ErrorReporter';
 import { formatSlashCommands } from './utils/slashCommandBuilder';
 import DatabaseManager from './classes/DatabaseManager';
 import UserAccountManager from './command-handlers/UserAccountHandler';
+import SeasonConfigManager from './command-handlers/SeasonConfigManager';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
@@ -45,14 +46,15 @@ async function start() {
     `Successfully registered ${data.length ?? 0} application (/) commands.`
   );
 
+  console.log('Connecting to db...');
+  await DatabaseManager.init();
+
   console.log('Initializing listeners...');
   BotStatusHandler.initWithGuild(client, guild);
   TradingHandler.init(client);
   ErrorReporter.init(client);
   UserAccountManager.init(client);
-
-  console.log('Connecting to db...');
-  DatabaseManager.init();
+  SeasonConfigManager.init(client);
 
   client.on(Events.InteractionCreate, CommandRouter);
   console.log('Ready!');
@@ -62,16 +64,26 @@ export async function registerCommands(): Promise<Array<unknown>> {
   // Register commands
   const TradingCommands = formatSlashCommands(TradingHandler.commands);
   const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
-  const UserAccountHandler = formatSlashCommands(UserAccountManager.commands);
+  const UserAccountCommands = formatSlashCommands(UserAccountManager.commands);
+  const SeasonConfigCommands = formatSlashCommands(
+    SeasonConfigManager.commands
+  );
   const data: any = await rest.put(
     Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
-    { body: [...TradingCommands, ...BotStatusCommands, ...UserAccountHandler] }
+    {
+      body: [
+        ...TradingCommands,
+        ...BotStatusCommands,
+        ...UserAccountCommands,
+        ...SeasonConfigCommands,
+      ],
+    }
   );
 
   return data;
 }
 
-async function CommandRouter(interaction: Interaction) {
+async function CommandRouter(interaction: ChatInputCommandInteraction) {
   if (interaction.type !== InteractionType.ApplicationCommand) {
     console.error('Invalid interaction type');
     return;
@@ -88,6 +100,9 @@ async function CommandRouter(interaction: Interaction) {
   }
   if (UserAccountManager.commands.hasOwnProperty(commandName)) {
     return UserAccountManager.onMessage(interaction);
+  }
+  if (SeasonConfigManager.commands.hasOwnProperty(commandName)) {
+    return SeasonConfigManager.onMessage(interaction);
   }
 }
 

@@ -10,8 +10,8 @@ import { Guard } from '../utils/helpers';
 import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
 import PolygonApi from '../classes/PolygonApi';
-import { CommandListType } from '../utils/types';
-import { IAggsPreviousClose, IAggsResults } from '@polygon.io/client-js';
+import { CommandListType, IAggsResults } from '../utils/types';
+import { IAggsPreviousClose } from '@polygon.io/client-js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 

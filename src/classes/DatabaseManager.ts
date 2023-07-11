@@ -1,21 +1,31 @@
 import { RedisClientType, createClient } from 'redis';
 import ErrorReporter from '../utils/ErrorReporter';
 import * as ENV from '../../env.json';
-import { IAggsResults } from '@polygon.io/client-js';
 import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
-import { Schema } from 'redis-om';
-import { UserAccount } from '../utils/types';
+import { UserAccount, IAggsResults } from '../utils/types';
 /**
  * Database design docs:
  *
- * Stock data:
+ * Metadata:
+ *   - All timestamps stored as UTC Unix timestamps
+ *
+ * Stock trade cache data:
  *   - Stored using Redis Strings type
+ *   - Key breakdown: `stock:${ticker}:${date}`
  *   - `.results` from the Polygon API is stored as a stringified JSON object
+ *   - Used as a cache to prevent hitting the Polygon API too often
  *   - Considered ephemeral and is set to expire at the next market open.
  *
- * User data:
+ * User account data:
  *   - Stored using Redis JSON type
- *   - TODO:
+ *   - Key breakdown: `user:${userId}${seasonId}`
+ *   - Keyed on season so we can keep historical data on users previous season performance
+ *   - Contains the user's account balance, portfolio, and other information
+ *
+ * Season data:
+ *   - Stored using Redis JSON type
+ *   - Key breakdown: `season:${seasonId}`
+ *   - Contains the season name, start/end dates, and any other metadata (todo) about seasons
  */
 
 class DatabaseManager {
@@ -98,6 +108,62 @@ class DatabaseManager {
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
         'Database Error: Failed to add user document',
+        err
+      );
+      throw err;
+    }
+  }
+
+  public async getAllSeasons(): Promise<any> {
+    try {
+      const reply = await this._dbClient.keys('season:');
+      if (reply == null) {
+        return null;
+      }
+      return reply;
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to get all seasons',
+        err
+      );
+    }
+  }
+
+  public async getSeason(seasonName: string): Promise<any> {
+    try {
+      const reply = await this._dbClient.json.get(`season:${seasonName}`);
+      if (reply == null) {
+        return null;
+      }
+      return reply;
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to get one season',
+        err
+      );
+    }
+  }
+
+  /**
+   * Triggered by admin commands to add a new season.
+   * Only one season allowed at a time, unique names required.
+   * Callee should ensure their new season doesn't overlap with an existing one before adding
+   */
+  public async addSeason(name: string, start: Date, end: Date): Promise<void> {
+    const season = {
+      name: name,
+      start: start.getTime(),
+      end: end.getTime(),
+    };
+
+    try {
+      if (await this.getSeason(name)) {
+        throw new Error('Season already exists');
+      }
+      await this._dbClient.json.set(`season:${name}`, '$', season);
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to add season document',
         err
       );
       throw err;
