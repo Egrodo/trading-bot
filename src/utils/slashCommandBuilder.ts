@@ -51,6 +51,7 @@ export function formatSlashCommands(
     const slashCommand = new SlashCommandBuilder()
       .setName(name)
       .setDescription(description);
+
     if ('options' in command) {
       formatSlashCommandOptions(slashCommand, command);
     }

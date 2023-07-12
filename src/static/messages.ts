@@ -2,6 +2,7 @@ import { formatAmountToReadable } from '../utils/helpers';
 
 const messages = {
   signupFailure: `Failed to sign up user. I'll PM my creator to report this :(`,
+  signupFailureNoSeason: `There is no active season to sign up for. Bug your admins to create one!`,
   signupSuccess: (balance: number) =>
     `Congrats, you've signed up for this season and have a starting balance of ${formatAmountToReadable(
       balance
@@ -36,6 +37,7 @@ const messages = {
   failedToGetStockPrice: `Failed to get stock price. I'll PM my creator to report this :(`,
   successfulPurchaseOrder: (ticker, price, buyAmount, totalAmount, balance) =>
     `Purchase order for ${ticker} completed for ${buyAmount} at ${price} / share. You now own ${totalAmount} stocks of ${ticker} and have a remaining balance of ${balance}`,
+  noActiveSeason: `There is no active season right now. Bug your admins to create one!`,
 };
 
 export default { ...messages };
