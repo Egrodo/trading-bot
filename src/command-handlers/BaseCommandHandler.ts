@@ -28,7 +28,7 @@ class BaseCommentHandler {
 
     let commandHandler;
 
-    const subCommand = interaction.options.getSubcommand();
+    const subCommand = interaction.options.getSubcommand(false);
     if (subCommand) {
       commandHandler = (localCommand as CommandWithSubCommandsType).subCommands[
         subCommand
