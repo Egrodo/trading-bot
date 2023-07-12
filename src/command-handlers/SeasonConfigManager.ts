@@ -3,6 +3,7 @@ import ENV from '../../env.json';
 import { CommandInteraction } from 'discord.js';
 import BaseCommentHandler from './BaseCommandHandler';
 import DatabaseManager from '../classes/DatabaseManager';
+import ErrorReporter from '../utils/ErrorReporter';
 
 /**
  * Handles configuration of the current season that is in play. Will include commands
@@ -18,16 +19,14 @@ class Season extends BaseCommentHandler {
   public commands: CommandListType = {
     season: {
       description: 'Get or set trading game seasons',
-      allowedChannel: ENV.tradingChannelId,
+      allowedChannel: ENV.debugInfoChannelId,
       subCommands: {
         current: {
           description: 'Get information about the current season',
-          allowedChannel: ENV.tradingChannelId,
           handler: this.handleCurrentSeasonCommand.bind(this),
         },
         add: {
           description: 'Add a new season to the queue',
-          allowedChannel: ENV.tradingChannelId,
           handler: this.addNewSeason.bind(this),
           options: [
             {
@@ -38,13 +37,15 @@ class Season extends BaseCommentHandler {
             },
             {
               name: 'startdate',
-              description: 'The date the season starts, in YYYY-MM-DD format',
+              description:
+                'The date the season starts in a valid format like MM/DD/YYYY. At least one day in the future.',
               type: 'string',
               required: true,
             },
             {
               name: 'enddate',
-              description: 'The date the season starts, in YYYY-MM-DD format',
+              description:
+                'The date the season ends in a valid format like MM/DD/YYYY. At least one day later than startdate',
               type: 'string',
               required: true,
             },
@@ -87,8 +88,61 @@ class Season extends BaseCommentHandler {
   }
 
   public async addNewSeason(interaction: CommandInteraction) {
-    // TODO:
-    console.log(interaction);
+    const name = interaction.options.get('name')?.value as string;
+    const startDateStr = interaction.options.get('startdate')?.value as string;
+    const endDateStr = interaction.options.get('enddate')?.value as string;
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    if (
+      startDate.toString() === 'Invalid Date' ||
+      endDate.toString() === 'Invalid Date'
+    ) {
+      interaction.reply({
+        content:
+          'Invalid date format. Please use a valid date format like YYYY-MM-DD',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Start date must be at least 1 day in the future
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    if (startDate < tomorrow) {
+      interaction.reply({
+        content: `Your start date must be in the future, you passed in "${startDate.toDateString()}".`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Start date must be before end date
+    if (startDate > endDate) {
+      interaction.reply({
+        content: `Your start date must be before your end date, you passed in "${startDate.toDateString()}" and "${endDate.toDateString()}".`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    try {
+      await DatabaseManager.addSeason(name, startDate, endDate);
+    } catch (err) {
+      interaction.reply({
+        content: `There was a database error adding your season. Please try again later.`,
+        ephemeral: true,
+      });
+      ErrorReporter.reportErrorInDebugChannel(
+        `Error adding season to the database`,
+        err
+      );
+      return;
+    }
+    interaction.reply(
+      `Successfully added season ${name} from ${startDate.toDateString()} to ${endDate.toDateString()}`
+    );
   }
 }
 

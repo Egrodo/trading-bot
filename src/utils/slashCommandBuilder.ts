@@ -1,9 +1,13 @@
 import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from 'discord.js';
-import { CommandListType, CommandWithOptionsType } from './types';
+import {
+  CommandListType,
+  CommandWithOptionsType,
+  SubcommandWithOptionsType,
+} from './types';
 
 function formatSlashCommandOptions(
   slashCommand: SlashCommandSubcommandBuilder | SlashCommandBuilder,
-  command: CommandWithOptionsType
+  command: CommandWithOptionsType | SubcommandWithOptionsType
 ) {
   command.options.forEach((option) => {
     switch (option.type) {
@@ -37,6 +41,12 @@ export function formatSlashCommands(
   // IDEA: Utilize `.addChoices` and `.setMaxValue/.setMinValue` to dynamically restrict input for commands dealing with a users owned stocks
   return Object.entries(commands).map(([name, command]) => {
     const { description } = command;
+
+    if (description.length > 100) {
+      throw new Error(
+        `Slash command description for ${name} exceeds 100 character limit`
+      );
+    }
 
     const slashCommand = new SlashCommandBuilder()
       .setName(name)

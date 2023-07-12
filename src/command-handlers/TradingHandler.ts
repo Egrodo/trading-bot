@@ -6,7 +6,6 @@ import {
   EmbedBuilder,
   TextChannel,
 } from 'discord.js';
-import { Guard } from '../utils/helpers';
 import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
 import PolygonApi from '../classes/PolygonApi';

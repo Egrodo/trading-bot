@@ -21,7 +21,7 @@ export interface CommandType {
 export interface CommandWithOptionsType extends CommandType {
   options: {
     name: string;
-    description: string;
+    description: string; // 100 character max length
     type: 'string' | 'number' | 'boolean' | 'integer';
     required: boolean;
     maxLength?: number; // Enforced for `string` types
@@ -29,8 +29,18 @@ export interface CommandWithOptionsType extends CommandType {
   }[];
 }
 
+export type SubcommandType = Omit<CommandType, 'allowedChannel'>;
+
+export type SubcommandWithOptionsType = Omit<
+  CommandWithOptionsType,
+  'allowedChannel'
+>;
+
 export interface CommandWithSubCommandsType extends CommandType {
-  subCommands: { [commandName: string]: CommandType | CommandWithOptionsType };
+  subCommands: {
+    // Subcommands use the same allowedChannel as their parent command
+    [commandName: string]: SubcommandType | SubcommandWithOptionsType;
+  };
 }
 
 export interface CommandListType {

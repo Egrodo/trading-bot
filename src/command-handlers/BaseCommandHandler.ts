@@ -1,5 +1,6 @@
 import { Client, ChatInputCommandInteraction } from 'discord.js';
 import { CommandListType, CommandWithSubCommandsType } from '../utils/types';
+import { Guard } from '../utils/helpers';
 
 class BaseCommentHandler {
   public commands: CommandListType = {};
@@ -10,6 +11,7 @@ class BaseCommentHandler {
     this._client = client;
   }
 
+  @Guard()
   public async onMessage(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {

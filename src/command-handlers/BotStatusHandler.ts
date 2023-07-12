@@ -2,7 +2,6 @@ import { Client, CommandInteraction, Guild } from 'discord.js';
 import ENV from '../../env.json';
 import { registerCommands } from '../bot';
 import { CommandListType } from '../utils/types';
-import { Guard } from '../utils/helpers';
 import ErrorReporter from '../utils/ErrorReporter';
 import BaseCommentHandler from './BaseCommandHandler';
 

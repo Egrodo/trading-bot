@@ -3,3 +3,4 @@ dist/env.json
 node_modules/
 .vscode/
 dist/
+yarn-error.log
