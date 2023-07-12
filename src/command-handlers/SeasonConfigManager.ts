@@ -65,10 +65,26 @@ class Season extends BaseCommentHandler {
   }
 
   private async fetchSeasonInfo(): Promise<void> {
-    this.seasons = await DatabaseManager.getAllSeasons();
-    if (Object.keys(this.seasons.length).length === 0) return;
-    // TODO: Select which season is active based on the current date
-    this.activeSeason = Object.values(this.seasons)[0];
+    console.log('Fetching season info...');
+    const allSeasons = await DatabaseManager.getAllSeasons();
+    if (allSeasons.length === 0) return;
+    this.seasons = allSeasons.reduce((acc, season) => {
+      acc[season.name] = season;
+      return acc;
+    }, {});
+    console.log(`Found ${Object.keys(this.seasons).length} seasons.`);
+
+    // Select which season is active based on the current date
+    const now = new Date().getTime();
+    const activeSeason = allSeasons.find(
+      (season) => season.start < now && season.end > now
+    );
+    if (activeSeason) {
+      this.activeSeason = activeSeason;
+      console.log(`Active season is "${this.activeSeason.name}"`);
+    } else {
+      console.log(`There is currently no active season.`);
+    }
   }
 
   public handleCurrentSeasonCommand(interaction: CommandInteraction) {
@@ -127,6 +143,25 @@ class Season extends BaseCommentHandler {
       return;
     }
 
+    // Make sure that this season doesn't overlap with an existing one
+    for (const season of Object.values(this.seasons)) {
+      if (
+        (startDate.getTime() >= season.start &&
+          startDate.getTime() <= season.end) ||
+        (endDate.getTime() >= season.start && endDate.getTime() <= season.end)
+      ) {
+        interaction.reply({
+          content: `Your season overlaps with an existing season, ${
+            season.name
+          } which runs from ${new Date(
+            season.start
+          ).toDateString()} to ${new Date(season.end).toDateString()}`,
+          ephemeral: true,
+        });
+        return;
+      }
+    }
+
     try {
       await DatabaseManager.addSeason(name, startDate, endDate);
     } catch (err) {
@@ -143,6 +178,9 @@ class Season extends BaseCommentHandler {
     interaction.reply(
       `Successfully added season ${name} from ${startDate.toDateString()} to ${endDate.toDateString()}`
     );
+
+    // Then update the seasons in memory
+    await this.fetchSeasonInfo();
   }
 }
 

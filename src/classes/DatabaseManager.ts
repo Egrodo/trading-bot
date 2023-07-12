@@ -2,7 +2,7 @@ import { RedisClientType, createClient } from 'redis';
 import ErrorReporter from '../utils/ErrorReporter';
 import * as ENV from '../../env.json';
 import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
-import { UserAccount, IAggsResults } from '../utils/types';
+import { UserAccount, IAggsResults, SeasonDocument } from '../utils/types';
 /**
  * Database design docs:
  *
@@ -114,13 +114,17 @@ class DatabaseManager {
     }
   }
 
-  public async getAllSeasons(): Promise<any> {
+  public async getAllSeasons(): Promise<Array<SeasonDocument>> {
     try {
-      const reply = await this._dbClient.keys('season:');
-      if (reply == null) {
+      const seasonKeys = await this._dbClient.keys('season:*');
+      if (seasonKeys == null) {
         return null;
       }
-      return reply;
+
+      const seasons = (await this._dbClient.json.mGet(seasonKeys, '$')) ?? [];
+      const seasonsFlattened = seasons.flat();
+
+      return seasonsFlattened as unknown as Array<SeasonDocument>;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
         'Database Error: Failed to get all seasons',
@@ -129,13 +133,13 @@ class DatabaseManager {
     }
   }
 
-  public async getSeason(seasonName: string): Promise<any> {
+  public async getSeason(seasonName: string): Promise<SeasonDocument> {
     try {
-      const reply = await this._dbClient.json.get(`season:${seasonName}`);
-      if (reply == null) {
+      const season = await this._dbClient.json.get(`season:${seasonName}`);
+      if (season == null) {
         return null;
       }
-      return reply;
+      return season as unknown as SeasonDocument;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
         'Database Error: Failed to get one season',
