@@ -8,6 +8,7 @@
     "@discordjs/core": "^0.6.0",
     "@polygon.io/client-js": "^7.2.5",
     "discord.js": "^14.11.0",
+    "node-cron": "^3.0.2",
     "redis": "^4.6.7"
   },
   "devDependencies": {

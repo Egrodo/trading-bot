@@ -46,7 +46,7 @@ async function start() {
     `Successfully registered ${data.length ?? 0} application (/) commands.`
   );
 
-  console.log('Connecting to db...');
+  console.log('Connecting to database...');
   await DatabaseManager.init();
 
   console.log('Initializing listeners...');

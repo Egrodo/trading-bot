@@ -4,6 +4,7 @@ import { CommandInteraction } from 'discord.js';
 import BaseCommentHandler from './BaseCommandHandler';
 import DatabaseManager from '../classes/DatabaseManager';
 import ErrorReporter from '../utils/ErrorReporter';
+import cron from 'node-cron';
 
 /**
  * Handles configuration of the current season that is in play. Will include commands
@@ -62,6 +63,11 @@ class Season extends BaseCommentHandler {
   public init(client) {
     super.init(client);
     this.fetchSeasonInfo();
+
+    cron.schedule('0 0 0 * * *', () => {
+      console.log('Updating seasons if necessary');
+      this.fetchSeasonInfo();
+    });
   }
 
   private async fetchSeasonInfo(): Promise<void> {
@@ -81,6 +87,8 @@ class Season extends BaseCommentHandler {
     );
     if (activeSeason) {
       this.activeSeason = activeSeason;
+      // TODO: This might also need to trigger some other things,
+      // like announcement messages in the server
       console.log(`Active season is "${this.activeSeason.name}"`);
     } else {
       console.log(`There is currently no active season.`);
@@ -90,9 +98,9 @@ class Season extends BaseCommentHandler {
   public handleCurrentSeasonCommand(interaction: CommandInteraction) {
     if (this.activeSeason) {
       interaction.reply(
-        `Currently in season ${
+        `Currently in season "${
           this.activeSeason.name
-        }. The season ends ${new Date(
+        }". The season ends ${new Date(
           this.activeSeason.end
         ).toDateString()} and started ${new Date(
           this.activeSeason.start

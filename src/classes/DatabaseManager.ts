@@ -38,7 +38,7 @@ class DatabaseManager {
     });
     this._dbClient.on('error', this.handleError.bind(this));
     await this._dbClient.connect();
-    console.log('Connected to database');
+    console.log('Connected to database!');
   }
 
   private handleError(err) {
