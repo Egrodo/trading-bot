@@ -1,7 +1,7 @@
 import { CommandListType } from '../types/types';
 import ENV from '../../env.json';
 import messages from '../static/messages';
-import { CommandInteraction } from 'discord.js';
+import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 import SeasonConfigManager from './SeasonConfigManager';
@@ -20,6 +20,11 @@ class UserAccountManager extends BaseCommentHandler {
       description: 'Check how much you have in cash',
       allowedChannel: ENV.tradingChannelId,
       handler: this.handleBalanceCommand.bind(this),
+    },
+    portfolio: {
+      description: 'Check the current stock holdings on your account',
+      allowedChannel: ENV.tradingChannelId,
+      handler: this.handlePortfolioCommand.bind(this),
     },
   };
 
@@ -85,6 +90,81 @@ class UserAccountManager extends BaseCommentHandler {
     }
 
     interaction.reply(messages.checkBalance(account.balance));
+  }
+
+  public async handlePortfolioCommand(interaction: CommandInteraction) {
+    const user = interaction.user;
+    const activeSeason = SeasonConfigManager.activeSeason;
+    if (!activeSeason) {
+      interaction.reply({
+        content: messages.noActiveSeason,
+        ephemeral: true,
+      });
+      return;
+    }
+    const account = await DatabaseManager.getAccount(
+      user.id,
+      activeSeason.name
+    );
+    if (!account) {
+      interaction.reply({ content: messages.noAccount, ephemeral: true });
+      return;
+    }
+
+    const currentHoldings = account.currentHoldings;
+
+    const firstEmbed = new EmbedBuilder()
+      .setTitle(`Portfolio for ${user.username}`)
+      .setDescription(
+        `Your current holdings for ${activeSeason.name} are as follows:`
+      )
+      .setColor('#663399');
+
+    const allEmbeds = [firstEmbed];
+
+    const holdingEntries = Object.entries(currentHoldings);
+
+    // Do the first up to 25 holdings
+    const firstLoopLength =
+      holdingEntries.length > 25 ? 25 : holdingEntries.length;
+    const firstEmbedFields = [];
+    for (let i = 0; i < firstLoopLength; ++i) {
+      const [ticker, quantity] = holdingEntries[i];
+      firstEmbedFields.push({
+        name: ticker,
+        value: quantity.toLocaleString(),
+        inline: true,
+      });
+    }
+
+    firstEmbed.addFields(firstEmbedFields);
+    if (holdingEntries.length > 25) {
+      for (let i = 25; i < holdingEntries.length; i += 25) {
+        const embed = new EmbedBuilder()
+          .setDescription(
+            'a continued display of your stock holdings are below:'
+          )
+          .setColor('#663399')
+          .setTimestamp();
+        const fields = [];
+        const loopLength =
+          i + 25 > holdingEntries.length ? holdingEntries.length : i + 25;
+        for (let j = i; j < loopLength; ++j) {
+          const [ticker, quantity] = holdingEntries[j];
+          fields.push({
+            name: ticker,
+            value: quantity.toLocaleString(),
+            inline: true,
+          });
+        }
+        embed.addFields(fields);
+        allEmbeds.push(embed);
+      }
+    }
+
+    allEmbeds.at(-1).setTimestamp();
+
+    interaction.reply({ embeds: allEmbeds });
   }
 }
 

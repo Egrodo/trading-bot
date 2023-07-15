@@ -13,7 +13,6 @@ class BotStatusHandler extends BaseCommentHandler {
       allowedChannel: ENV.debugInfoChannelId,
       handler: this.ping.bind(this),
     },
-    // TODO: Reset root cmd with `commands` as subcommand
     reset: {
       description:
         'Re-register the bot commands with Discord. Only use when necessary',

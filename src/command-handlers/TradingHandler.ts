@@ -341,7 +341,6 @@ class TradingCommandHandler extends BaseCommentHandler {
         ephemeral: true,
       });
     } catch (err) {
-      console.log(err);
       interaction.reply({
         content: messages.errorBuyingStock,
         ephemeral: true,
