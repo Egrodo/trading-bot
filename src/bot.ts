@@ -1,17 +1,10 @@
 import * as ENV from '../env.json';
 
-// import helpers from "./helpers";
-// const { rateLimiter } = helpers;
-
-// 1.5 second cooldown to limit spam
-// const COMMAND_COOLDOWN = 1.5 * 1000;
-
 import {
   ChatInputCommandInteraction,
   Client,
   Events,
   GatewayIntentBits,
-  Interaction,
   InteractionType,
   REST,
   Routes,

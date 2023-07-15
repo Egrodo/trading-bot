@@ -1,5 +1,5 @@
 import { Client, ChatInputCommandInteraction } from 'discord.js';
-import { CommandListType, CommandWithSubCommandsType } from '../utils/types';
+import { CommandListType, CommandWithSubCommandsType } from '../types/types';
 import { Guard } from '../utils/helpers';
 
 class BaseCommentHandler {

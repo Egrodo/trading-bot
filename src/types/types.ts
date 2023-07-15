@@ -26,6 +26,8 @@ export interface CommandWithOptionsType extends CommandType {
     required: boolean;
     maxLength?: number; // Enforced for `string` types
     minLength?: number; // Enforced for `string` types
+    minValue?: number; // Enforced for `number` and `integer` types
+    maxValue?: number; // Enforced for `number` and `integer` types
   }[];
 }
 
@@ -51,24 +53,23 @@ export interface CommandListType {
 }
 
 export interface UserAccount {
-  balance: number; // Total balance represented in cents
-  currentHoldings: { [tickerKey: string]: StockHolding };
+  balance: number; // Total balance represented in dollars with 2 decimal places of cents
+  currentHoldings: { [ticker: string]: number }; // Number of shares of each stock
   tradeHistory: PastTrade[];
   signupTs: number;
 }
 
-/* Information about a single stock that a user owns */
-export interface StockHolding {
-  companyName?: string;
-  amountOwned: number;
+export enum TradeType {
+  BUY,
+  SELL,
 }
 
 export interface PastTrade {
   ticker: string;
   timestamp: number;
   price: number;
-  transactionType: 'buy' | 'sell';
-  amountTraded: number;
+  type: TradeType;
+  quantity: number;
 }
 
 export interface SeasonDocument {

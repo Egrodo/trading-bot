@@ -1,6 +1,8 @@
 // import { Client, Message, PermissionsBitField, User } from "discord.js";
 
 // const SERVER_ID = "482608530105434112";
+import fsPromise from 'fs/promises';
+import ErrorReporter from './ErrorReporter';
 
 export function Guard() {
   return function (
@@ -55,10 +57,9 @@ export function getNextStockMarketOpeningTimestamp(): number {
 
 export function formatAmountToReadable(balance: number): string {
   if (balance < 0) {
-    return `-$${Math.abs(balance / 100).toLocaleString()}`;
+    return `-$${Number(balance.toFixed(2)).toLocaleString()}`;
   }
-  const dollarified = Math.round((balance / 100 + Number.EPSILON) * 100) / 100;
-  return `$${dollarified.toLocaleString()}`;
+  return `$${Number(balance.toFixed(2)).toLocaleString()}`;
 }
 
 // export default {

@@ -1,10 +1,12 @@
-import { CommandListType } from '../utils/types';
+import { CommandListType } from '../types/types';
 import ENV from '../../env.json';
 import messages from '../static/messages';
 import { CommandInteraction } from 'discord.js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 import SeasonConfigManager from './SeasonConfigManager';
+
+const STARTING_BALANCE = 1000.0; // $1,000 TODO: This will be different per season in future
 
 /* Handles operations to user account information */
 class UserAccountManager extends BaseCommentHandler {
@@ -23,7 +25,6 @@ class UserAccountManager extends BaseCommentHandler {
 
   public async handleSignupCommand(interaction: CommandInteraction) {
     const user = interaction.user;
-    const startingBalance = 1000 * 100; // $1,000 bux
     const currentSeason = SeasonConfigManager.activeSeason;
     if (!currentSeason) {
       interaction.reply({
@@ -51,11 +52,11 @@ class UserAccountManager extends BaseCommentHandler {
 
       await DatabaseManager.registerAccount(
         user.id,
-        startingBalance,
+        STARTING_BALANCE,
         seasonName
       );
       interaction.reply({
-        content: messages.signupSuccess(startingBalance),
+        content: messages.signupSuccess(STARTING_BALANCE),
         ephemeral: true,
       });
     } catch (err) {

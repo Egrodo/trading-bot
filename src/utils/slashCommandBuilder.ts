@@ -3,7 +3,7 @@ import {
   CommandListType,
   CommandWithOptionsType,
   SubcommandWithOptionsType,
-} from './types';
+} from '../types/types';
 
 function formatSlashCommandOptions(
   slashCommand: SlashCommandSubcommandBuilder | SlashCommandBuilder,
@@ -21,15 +21,27 @@ function formatSlashCommandOptions(
           if (option.minLength) builtOption.setMinLength(option.minLength);
           return builtOption;
         });
+        break;
       }
       case 'number': {
         // todo;
+        break;
       }
       case 'boolean': {
         // todo;
+        break;
       }
       case 'integer': {
-        // todo;
+        slashCommand.addIntegerOption((builtOption) => {
+          builtOption
+            .setName(option.name)
+            .setDescription(option.description)
+            .setRequired(option.required);
+          if (option.maxValue) builtOption.setMaxValue(option.maxValue);
+          if (option.minValue) builtOption.setMinValue(option.minValue);
+          return builtOption;
+        });
+        break;
       }
     }
   });
