@@ -1,4 +1,4 @@
-import { CommandListType, SeasonDocument } from "../types/types";
+import { CommandListType, SeasonDocument } from "../types";
 import ENV from "../../env.json";
 import { CommandInteraction } from "discord.js";
 import BaseCommentHandler from "./BaseCommandHandler";

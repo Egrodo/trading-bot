@@ -1,26 +1,27 @@
-import { Client, ChatInputCommandInteraction } from 'discord.js';
-import { CommandListType, CommandWithSubCommandsType } from '../types/types';
-import { Guard } from '../utils/helpers';
+import { ChatInputCommandInteraction, Client } from "discord.js";
+import { CommandListType, CommandWithSubCommandsType } from "../types";
+import { Guard } from "../utils/helpers";
 
 class BaseCommentHandler {
   public commands: CommandListType = {};
   protected _client: Client;
 
   init(client: Client) {
-    if (!client) throw new Error('Client is undefined');
+    if (!client) throw new Error("Client is undefined");
     this._client = client;
   }
 
   @Guard()
   public async onMessage(
-    interaction: ChatInputCommandInteraction
+    interaction: ChatInputCommandInteraction,
   ): Promise<void> {
     // Ensure that the command is only used in the proper channel.
 
     const localCommand = this.commands[interaction.commandName];
     if (!localCommand.allowedChannel.includes(interaction.channelId)) {
       interaction.reply({
-        content: `This command is only available in <#${localCommand.allowedChannel.toString()}>`,
+        content:
+          `This command is only available in <#${localCommand.allowedChannel.toString()}>`,
         ephemeral: true,
       });
       return;

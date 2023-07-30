@@ -9,7 +9,7 @@ import {
 import ENV from "../../env.json";
 import ErrorReporter from "../utils/ErrorReporter";
 import PolygonApi from "../classes/PolygonApi";
-import { CommandListType, IAggsResults } from "../types/types";
+import { CommandListType, IAggsResults } from "../types";
 import { IAggsPreviousClose } from "@polygon.io/client-js";
 import DatabaseManager from "../classes/DatabaseManager";
 import BaseCommentHandler from "./BaseCommandHandler";
@@ -52,6 +52,29 @@ class TradingCommandHandler extends BaseCommentHandler {
         {
           name: "quantity",
           description: "The quantity of the stock to buy",
+          type: "integer",
+          required: true,
+          minValue: 1,
+          maxValue: 1000000,
+        },
+      ],
+    },
+    sell: {
+      description: "Sell a stock",
+      allowedChannel: ENV.tradingChannelId,
+      handler: this.handleSellCommand.bind(this),
+      options: [
+        {
+          name: "ticker",
+          description: "The ticker of the stock to sell",
+          type: "string",
+          required: true,
+          maxLength: 5,
+          minLength: 1,
+        },
+        {
+          name: "quantity",
+          description: "The quantity of the stock to sell",
           type: "integer",
           required: true,
           minValue: 1,
@@ -325,7 +348,7 @@ class TradingCommandHandler extends BaseCommentHandler {
         .setTimestamp();
 
       // Attach success icon
-      const imgPath = path.resolve(__dirname, "../images/success.png");
+      const imgPath = path.resolve(__dirname, "../static/images/success.png");
       const imgBuffer = await fsPromise.readFile(imgPath);
 
       const successIconAttachment = new AttachmentBuilder(imgBuffer, {
@@ -349,6 +372,10 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       return;
     }
+  }
+
+  public async handleSellCommand(interaction: CommandInteraction) {
+    // todo;
   }
 }
 

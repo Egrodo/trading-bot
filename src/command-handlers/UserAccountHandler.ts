@@ -1,4 +1,4 @@
-import { CommandListType } from "../types/types";
+import { CommandListType } from "../types";
 import ENV from "../../env.json";
 import { richStrings, strings } from "../static/strings";
 import { CommandInteraction, EmbedBuilder } from "discord.js";

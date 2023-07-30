@@ -1,10 +1,10 @@
-import { RedisClientType, createClient } from 'redis';
-import ErrorReporter from '../utils/ErrorReporter';
-import * as ENV from '../../env.json';
-import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
-import type { UserAccount, IAggsResults, SeasonDocument } from '../types/types';
+import { createClient, RedisClientType } from "redis";
+import ErrorReporter from "../utils/ErrorReporter";
+import * as ENV from "../../env.json";
+import { getNextStockMarketOpeningTimestamp } from "../utils/helpers";
+import type { IAggsResults, SeasonDocument, UserAccount } from "../types";
 
-import { TradeType } from '../types/types';
+import { TradeType } from "../types";
 
 /**
  * Database design docs:
@@ -39,14 +39,14 @@ class DatabaseManager {
     this._dbClient = createClient({
       url: `redis://${dbUser}:${dbPass}@${dbUrl}`,
     });
-    this._dbClient.on('error', this.handleError.bind(this));
+    this._dbClient.on("error", this.handleError.bind(this));
     await this._dbClient.connect();
-    console.log('Connected to database!');
+    console.log("Connected to database!");
   }
 
   private handleError(err) {
     console.error(err);
-    ErrorReporter.reportErrorInDebugChannel('Database error', err);
+    ErrorReporter.reportErrorInDebugChannel("Database error", err);
   }
 
   public async getCachedPrice(ticker: string): Promise<IAggsResults> {
@@ -56,15 +56,15 @@ class DatabaseManager {
       return results;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to get cached price',
-        err
+        "Database Error: Failed to get cached price",
+        err,
       );
     }
   }
 
   public async setCachedStockInfo(
     ticker: string,
-    results: IAggsResults
+    results: IAggsResults,
   ): Promise<void> {
     const expireTime = getNextStockMarketOpeningTimestamp();
     const stringified = JSON.stringify(results);
@@ -75,11 +75,11 @@ class DatabaseManager {
 
   public async getAccount(
     userId: string,
-    seasonName: string
+    seasonName: string,
   ): Promise<UserAccount> {
     try {
       const reply = await this._dbClient.json.get(
-        `user:${userId}:${seasonName}`
+        `user:${userId}:${seasonName}`,
       );
       if (reply == null) {
         return null;
@@ -87,8 +87,8 @@ class DatabaseManager {
       return reply as unknown as UserAccount;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to get user document',
-        err
+        "Database Error: Failed to get user document",
+        err,
       );
     }
   }
@@ -97,7 +97,7 @@ class DatabaseManager {
   public async registerAccount(
     userId: string,
     startingBalance: number,
-    seasonName: string
+    seasonName: string,
   ): Promise<void> {
     const user = {
       balance: startingBalance,
@@ -107,13 +107,13 @@ class DatabaseManager {
     };
 
     try {
-      await this._dbClient.json.set(`user:${userId}:${seasonName}`, '$', user, {
+      await this._dbClient.json.set(`user:${userId}:${seasonName}`, "$", user, {
         NX: true,
       });
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to add user document',
-        err
+        "Database Error: Failed to add user document",
+        err,
       );
       throw err;
     }
@@ -121,19 +121,19 @@ class DatabaseManager {
 
   public async getAllSeasons(): Promise<Array<SeasonDocument>> {
     try {
-      const seasonKeys = await this._dbClient.keys('season:*');
+      const seasonKeys = await this._dbClient.keys("season:*");
       if (seasonKeys == null) {
         return null;
       }
 
-      const seasons = (await this._dbClient.json.mGet(seasonKeys, '$')) ?? [];
+      const seasons = (await this._dbClient.json.mGet(seasonKeys, "$")) ?? [];
       const seasonsFlattened = seasons.flat();
 
       return seasonsFlattened as unknown as Array<SeasonDocument>;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to get all seasons',
-        err
+        "Database Error: Failed to get all seasons",
+        err,
       );
     }
   }
@@ -147,8 +147,8 @@ class DatabaseManager {
       return season as unknown as SeasonDocument;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to get one season',
-        err
+        "Database Error: Failed to get one season",
+        err,
       );
     }
   }
@@ -167,13 +167,13 @@ class DatabaseManager {
 
     try {
       if (await this.getSeason(name)) {
-        throw new Error('Season already exists');
+        throw new Error("Season already exists");
       }
-      await this._dbClient.json.set(`season:${name}`, '$', season);
+      await this._dbClient.json.set(`season:${name}`, "$", season);
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to add season document',
-        err
+        "Database Error: Failed to add season document",
+        err,
       );
       throw err;
     }
@@ -212,19 +212,19 @@ class DatabaseManager {
     try {
       const userIdKey = `user:${userId}:${seasonName}`;
       // Update user balance first, if that fails we can exit early
-      await this._dbClient.json.set(userIdKey, '.balance', newUserBalance);
+      await this._dbClient.json.set(userIdKey, ".balance", newUserBalance);
       // Then update the user's current holdings
       await this._dbClient.json.set(
         userIdKey,
-        '.currentHoldings',
-        newCurrentHoldings
+        ".currentHoldings",
+        newCurrentHoldings,
       );
       // Then add the trade to the user's trade history
-      await this._dbClient.json.arrAppend(userIdKey, '.tradeHistory', newTrade);
+      await this._dbClient.json.arrAppend(userIdKey, ".tradeHistory", newTrade);
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to add buy to user account',
-        err
+        "Database Error: Failed to add buy to user account",
+        err,
       );
       throw err;
     }

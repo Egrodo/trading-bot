@@ -20,7 +20,7 @@
   "scripts": {
     "build": "yarn clean && tsc && yarn copy-images",
     "clean": "rm -rf dist",
-    "copy-images": "cp ./src/images ./dist/src -r",
+    "copy-images": "cp -r ./src/static/images ./dist/src/static",
     "start": "node dist/src/bot.js",
     "start:inspect": "node --inspect dist/src/bot.js",
     "dev": "nodemon -e ts --exec \"yarn run build && yarn start:inspect\""
