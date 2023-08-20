@@ -5,31 +5,31 @@ import {
   CommandInteraction,
   EmbedBuilder,
   TextChannel,
-} from "discord.js";
-import ENV from "../../env.json";
-import ErrorReporter from "../utils/ErrorReporter";
-import PolygonApi from "../classes/PolygonApi";
-import { CommandListType, IAggsResults } from "../types";
-import { IAggsPreviousClose } from "@polygon.io/client-js";
-import DatabaseManager from "../classes/DatabaseManager";
-import BaseCommentHandler from "./BaseCommandHandler";
-import SeasonConfigManager from "./SeasonConfigManager";
-import { richStrings, strings } from "../static/strings";
-import { formatAmountToReadable } from "../utils/helpers";
-import fsPromise from "fs/promises";
-import path from "path";
+} from 'discord.js';
+import ENV from '../../env.json';
+import ErrorReporter from '../utils/ErrorReporter';
+import PolygonApi from '../classes/PolygonApi';
+import { CommandListType, IAggsResults } from '../types';
+import { IAggsPreviousClose } from '@polygon.io/client-js';
+import DatabaseManager from '../classes/DatabaseManager';
+import BaseCommentHandler from './BaseCommandHandler';
+import SeasonConfigManager from './SeasonConfigManager';
+import { richStrings, strings } from '../static/strings';
+import { formatAmountToReadable } from '../utils/helpers';
+import fsPromise from 'fs/promises';
+import path from 'path';
 
 class TradingCommandHandler extends BaseCommentHandler {
   public commands: CommandListType = {
     price: {
-      description: "Check the price of a stock",
+      description: 'Check the price of a stock',
       allowedChannel: ENV.tradingChannelId,
       handler: this.handlePriceCommand.bind(this),
       options: [
         {
-          name: "ticker",
-          description: "The ticker of the stock to check",
-          type: "string",
+          name: 'ticker',
+          description: 'The ticker of the stock to check',
+          type: 'string',
           required: true,
           maxLength: 5,
           minLength: 1,
@@ -37,22 +37,22 @@ class TradingCommandHandler extends BaseCommentHandler {
       ],
     },
     buy: {
-      description: "Buy a stock",
+      description: 'Buy a stock',
       allowedChannel: ENV.tradingChannelId,
       handler: this.handleBuyCommand.bind(this),
       options: [
         {
-          name: "ticker",
-          description: "The ticker of the stock to buy",
-          type: "string",
+          name: 'ticker',
+          description: 'The ticker of the stock to buy',
+          type: 'string',
           required: true,
           maxLength: 5,
           minLength: 1,
         },
         {
-          name: "quantity",
-          description: "The quantity of the stock to buy",
-          type: "integer",
+          name: 'quantity',
+          description: 'The quantity of the stock to buy',
+          type: 'integer',
           required: true,
           minValue: 1,
           maxValue: 1000000,
@@ -60,22 +60,22 @@ class TradingCommandHandler extends BaseCommentHandler {
       ],
     },
     sell: {
-      description: "Sell a stock",
+      description: 'Sell a stock',
       allowedChannel: ENV.tradingChannelId,
       handler: this.handleSellCommand.bind(this),
       options: [
         {
-          name: "ticker",
-          description: "The ticker of the stock to sell",
-          type: "string",
+          name: 'ticker',
+          description: 'The ticker of the stock to sell',
+          type: 'string',
           required: true,
           maxLength: 5,
           minLength: 1,
         },
         {
-          name: "quantity",
-          description: "The quantity of the stock to sell",
-          type: "integer",
+          name: 'quantity',
+          description: 'The quantity of the stock to sell',
+          type: 'integer',
           required: true,
           minValue: 1,
           maxValue: 1000000,
@@ -96,7 +96,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       this._tradingChannel = channel;
     } else {
       ErrorReporter.reportErrorInDebugChannel(
-        "Trading channel is not a text channel",
+        'Trading channel is not a text channel'
       );
     }
   }
@@ -104,7 +104,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   /* Get price info either from the cache or from Polygon API */
   private async fetchPriceInfo(
     ticker: string,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ): Promise<IAggsResults> {
     const cachedPriceInfo = await DatabaseManager.getCachedPrice(ticker);
     if (cachedPriceInfo) {
@@ -122,10 +122,10 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       return;
     }
-    if (quote.status !== "OK") {
+    if (quote.status !== 'OK') {
       ErrorReporter.reportErrorInDebugChannel(
         `Error fetching price data for ${ticker}`,
-        interaction,
+        interaction
       );
       interaction.reply({
         content: strings.errorFetchingPrice,
@@ -151,11 +151,11 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   private async handlePriceCommand(
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ): Promise<void> {
     // Validate that the user actually sent a ticker
     const ticker = (
-      interaction.options.get("ticker")?.value as string
+      interaction.options.get('ticker')?.value as string
     ).toUpperCase();
     if (!ticker) {
       interaction.reply({
@@ -163,8 +163,8 @@ class TradingCommandHandler extends BaseCommentHandler {
         ephemeral: true,
       });
       ErrorReporter.reportErrorInDebugChannel(
-        "Price command received with no ticker",
-        interaction,
+        'Price command received with no ticker',
+        interaction
       );
       return;
     }
@@ -184,14 +184,14 @@ class TradingCommandHandler extends BaseCommentHandler {
     let companyInfo;
     try {
       const companyInfoReq = await PolygonApi.getTickerInfo(ticker);
-      if (companyInfoReq?.status === "OK") {
+      if (companyInfoReq?.status === 'OK') {
         companyInfo = companyInfoReq.results;
       }
     } catch (err) {
-      if (err.message !== "Ticker not found.") {
+      if (err.message !== 'Ticker not found.') {
         ErrorReporter.reportErrorInDebugChannel(
           `Error fetching company info for ${ticker}`,
-          err,
+          err
         );
       }
     }
@@ -203,7 +203,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       : null;
 
     // If the stock was up for the day, show green. Otherwise show red
-    const color = prevClose.c > prevClose.o ? "#00FF00" : "#FF0000";
+    const color = prevClose.c > prevClose.o ? '#00FF00' : '#FF0000';
 
     const embed = new EmbedBuilder()
       .setColor(color)
@@ -215,41 +215,41 @@ class TradingCommandHandler extends BaseCommentHandler {
       .setDescription(`Market close data from the last trading day`)
       .addFields([
         {
-          name: "Close price",
+          name: 'Close price',
           value: `$${prevClose.c}`,
           inline: true,
         },
         {
-          name: prevClose.c > prevClose.o ? "Increase of" : "Decrease of",
+          name: prevClose.c > prevClose.o ? 'Increase of' : 'Decrease of',
           value: `$${(prevClose.c - prevClose.o).toFixed(2)}`,
           inline: true,
         },
         {
-          name: "\u200B",
-          value: "\u200B",
+          name: '\u200B',
+          value: '\u200B',
           inline: true,
         },
         {
-          name: "Percent change",
+          name: 'Percent change',
           value: `${((prevClose.c / prevClose.o - 1) * 100).toFixed(2)}%`,
         },
         {
-          name: "Open price",
+          name: 'Open price',
           value: `$${prevClose.o}`,
           inline: true,
         },
         {
-          name: "High price",
+          name: 'High price',
           value: `$${prevClose.h}`,
           inline: true,
         },
         {
-          name: "Low price",
+          name: 'Low price',
           value: `$${prevClose.l}`,
           inline: true,
         },
         {
-          name: "Volume",
+          name: 'Volume',
           value: `${prevClose.v.toLocaleString()} shares traded`,
         },
       ])
@@ -282,14 +282,14 @@ class TradingCommandHandler extends BaseCommentHandler {
     }
 
     const ticker = (
-      interaction.options.get("ticker")?.value as string
+      interaction.options.get('ticker')?.value as string
     ).toUpperCase();
-    const quantity = interaction.options.get("quantity")?.value as number;
+    const quantity = interaction.options.get('quantity')?.value as number;
 
     // Get user info to validate that they can afford this transaction
     const userAccount = await DatabaseManager.getAccount(
       interaction.user.id,
-      SeasonConfigManager.activeSeason.name,
+      SeasonConfigManager.activeSeason.name
     );
 
     if (!userAccount) {
@@ -312,16 +312,18 @@ class TradingCommandHandler extends BaseCommentHandler {
           userBalance,
           quantity,
           ticker,
-          totalCost,
+          totalCost
         ),
         ephemeral: true,
       });
       return;
     }
 
+    const newBalance = userBalance - totalCost;
+
     // Success? Update the user's balance and add the stock to their portfolio
     try {
-      await DatabaseManager.addStocksToAccount({
+      await DatabaseManager.buyStocks({
         userId: interaction.user.id,
         userAccount,
         seasonName: SeasonConfigManager.activeSeason.name,
@@ -332,27 +334,25 @@ class TradingCommandHandler extends BaseCommentHandler {
 
       // Success! Reply with a detailed confirmation message
       const embed = new EmbedBuilder()
-        .setColor("#00FF00")
+        .setColor('#00FF00')
         .setTitle(`Success!`)
         .setAuthor({
           name: ENV.botName,
           iconURL: ENV.botIconUrl,
         })
         .setDescription(
-          `Succesfully purchased ${quantity} shares of ${ticker} at ${
-            formatAmountToReadable(
-              stockPrice,
-            )
-          } per share for a total of ${formatAmountToReadable(totalCost)}`,
+          `Succesfully purchased ${quantity} shares of ${ticker} at ${formatAmountToReadable(
+            stockPrice
+          )} per share for a total of ${formatAmountToReadable(totalCost)}`
         )
         .setTimestamp();
 
       // Attach success icon
-      const imgPath = path.resolve(__dirname, "../static/images/success.png");
+      const imgPath = path.resolve(__dirname, '../static/images/success.png');
       const imgBuffer = await fsPromise.readFile(imgPath);
 
       const successIconAttachment = new AttachmentBuilder(imgBuffer, {
-        name: "success.png",
+        name: 'success.png',
       });
       embed.setThumbnail(`attachment://${successIconAttachment.name}`);
 
@@ -362,7 +362,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       // Follow up with ephemeral message telling user their new balance
       await interaction.followUp({
-        content: richStrings.checkNewBalance(userAccount.balance),
+        content: richStrings.checkNewBalance(newBalance),
         ephemeral: true,
       });
     } catch (err) {
@@ -375,7 +375,108 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   public async handleSellCommand(interaction: CommandInteraction) {
-    // todo;
+    if (!SeasonConfigManager.activeSeason) {
+      interaction.reply({
+        content: strings.noActiveSeason,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const ticker = (
+      interaction.options.get('ticker')?.value as string
+    ).toUpperCase();
+    const quantity = interaction.options.get('quantity')?.value as number;
+
+    // Get user info to validate that they own the stock they're trying to sell
+    const userAccount = await DatabaseManager.getAccount(
+      interaction.user.id,
+      SeasonConfigManager.activeSeason.name
+    );
+
+    if (!userAccount) {
+      interaction.reply({
+        content: strings.noAccount,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const usersHoldings = userAccount.currentHoldings;
+    const holdingsOfRequestedStock = usersHoldings[ticker];
+    if (!holdingsOfRequestedStock || holdingsOfRequestedStock === 0) {
+      interaction.reply({
+        content: richStrings.dontOwnStock(ticker),
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (holdingsOfRequestedStock < quantity) {
+      interaction.reply({
+        content: richStrings.notEnoughStock(ticker, quantity),
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const { c: stockPrice } = await this.fetchPriceInfo(ticker, interaction);
+
+    const totalIncome = Number((stockPrice * quantity).toFixed(2));
+    const newBalance = userAccount.balance + totalIncome;
+
+    // Success? Update the user's balance and remove the stock quantity from their account
+    try {
+      await DatabaseManager.sellStocks({
+        userId: interaction.user.id,
+        userAccount,
+        seasonName: SeasonConfigManager.activeSeason.name,
+        ticker,
+        price: stockPrice,
+        quantity,
+      });
+
+      // Success! Reply with a detailed confirmation message
+      const embed = new EmbedBuilder()
+        .setColor('#00FF00')
+        .setTitle(`Success!`)
+        .setAuthor({
+          name: ENV.botName,
+          iconURL: ENV.botIconUrl,
+        })
+        .setDescription(
+          `Succesfully sold ${quantity} shares of ${ticker} at ${formatAmountToReadable(
+            stockPrice
+          )} per share for a total of ${formatAmountToReadable(totalIncome)}`
+        )
+        .setTimestamp();
+
+      // Attach success icon
+      const imgPath = path.resolve(__dirname, '../static/images/success.png');
+      const imgBuffer = await fsPromise.readFile(imgPath);
+
+      const successIconAttachment = new AttachmentBuilder(imgBuffer, {
+        name: 'success.png',
+      });
+      embed.setThumbnail(`attachment://${successIconAttachment.name}`);
+
+      await interaction.reply({
+        embeds: [embed],
+        files: [successIconAttachment],
+      });
+
+      // Follow up with ephemeral message telling user their new balance
+      await interaction.followUp({
+        content: richStrings.checkNewBalance(newBalance),
+        ephemeral: true,
+      });
+    } catch (err) {
+      interaction.reply({
+        content: strings.errorSellingStock,
+        ephemeral: true,
+      });
+      return;
+    }
   }
 }
 

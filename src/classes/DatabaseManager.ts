@@ -179,7 +179,7 @@ class DatabaseManager {
     }
   }
 
-  public async addStocksToAccount({
+  public async buyStocks({
     userId,
     userAccount,
     seasonName,
@@ -187,7 +187,7 @@ class DatabaseManager {
     price,
     quantity,
   }: {
-    userId: string;
+    userId: string; // This refers to the users Discord ID
     userAccount: UserAccount;
     seasonName: string;
     ticker: string;
@@ -224,6 +224,61 @@ class DatabaseManager {
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
         'Database Error: Failed to add buy to user account',
+        err
+      );
+      throw err;
+    }
+  }
+
+  public async sellStocks({
+    userId,
+    userAccount,
+    seasonName,
+    ticker,
+    price,
+    quantity,
+  }: {
+    userId: string; // This refers to the users Discord ID
+    userAccount: UserAccount;
+    seasonName: string;
+    ticker: string;
+    price: number;
+    quantity: number;
+  }) {
+    try {
+      const newStockQuantity = userAccount.currentHoldings[ticker] - quantity;
+      if (newStockQuantity < 0) {
+        throw new Error('Not enough stock to sell');
+      }
+      const newCurrentHoldings = {
+        ...userAccount.currentHoldings,
+        [ticker]: userAccount.currentHoldings[ticker] - quantity,
+      };
+
+      const newTrade = {
+        ticker,
+        timestamp: Date.now(),
+        type: TradeType.SELL,
+        price,
+        quantity,
+      };
+
+      const newUserBalance = userAccount.balance + price * quantity;
+
+      const userIdKey = `user:${userId}:${seasonName}`;
+      // Update user balance first, if that fails we can exit early
+      await this._dbClient.json.set(userIdKey, '.balance', newUserBalance);
+      // Then update the user's current holdings
+      await this._dbClient.json.set(
+        userIdKey,
+        '.currentHoldings',
+        newCurrentHoldings
+      );
+      // Then add the trade to the user's trade history
+      await this._dbClient.json.arrAppend(userIdKey, '.tradeHistory', newTrade);
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to add sell to user account',
         err
       );
       throw err;

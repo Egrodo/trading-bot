@@ -1,10 +1,10 @@
-import { CommandListType } from "../types";
-import ENV from "../../env.json";
-import { richStrings, strings } from "../static/strings";
-import { CommandInteraction, EmbedBuilder } from "discord.js";
-import DatabaseManager from "../classes/DatabaseManager";
-import BaseCommentHandler from "./BaseCommandHandler";
-import SeasonConfigManager from "./SeasonConfigManager";
+import { CommandListType } from '../types';
+import ENV from '../../env.json';
+import { richStrings, strings } from '../static/strings';
+import { CommandInteraction, EmbedBuilder } from 'discord.js';
+import DatabaseManager from '../classes/DatabaseManager';
+import BaseCommentHandler from './BaseCommandHandler';
+import SeasonConfigManager from './SeasonConfigManager';
 
 const STARTING_BALANCE = 1000.0; // $1,000 TODO: This will be different per season in future
 
@@ -17,12 +17,12 @@ class UserAccountManager extends BaseCommentHandler {
       handler: this.handleSignupCommand.bind(this),
     },
     balance: {
-      description: "Check how much you have in cash",
+      description: 'Check how much you have in cash',
       allowedChannel: ENV.tradingChannelId,
       handler: this.handleBalanceCommand.bind(this),
     },
     portfolio: {
-      description: "Check the current stock holdings on your account",
+      description: 'Check the current stock holdings on your account',
       allowedChannel: ENV.tradingChannelId,
       handler: this.handlePortfolioCommand.bind(this),
     },
@@ -42,16 +42,14 @@ class UserAccountManager extends BaseCommentHandler {
     try {
       const existingUser = await DatabaseManager.getAccount(
         user.id,
-        seasonName,
+        seasonName
       );
 
       if (existingUser) {
         interaction.reply({
-          content: `${strings.dupAccount} ${
-            richStrings.checkBalance(
-              existingUser.balance,
-            )
-          }`,
+          content: `${strings.dupAccount} ${richStrings.checkBalance(
+            existingUser.balance
+          )}`,
           ephemeral: true,
         });
         return;
@@ -60,7 +58,7 @@ class UserAccountManager extends BaseCommentHandler {
       await DatabaseManager.registerAccount(
         user.id,
         STARTING_BALANCE,
-        seasonName,
+        seasonName
       );
       interaction.reply({
         content: richStrings.signupSuccess(STARTING_BALANCE),
@@ -84,7 +82,7 @@ class UserAccountManager extends BaseCommentHandler {
     }
     const account = await DatabaseManager.getAccount(
       user.id,
-      activeSeason.name,
+      activeSeason.name
     );
     if (!account) {
       interaction.reply({ content: strings.noAccount, ephemeral: true });
@@ -106,7 +104,7 @@ class UserAccountManager extends BaseCommentHandler {
     }
     const account = await DatabaseManager.getAccount(
       user.id,
-      activeSeason.name,
+      activeSeason.name
     );
     if (!account) {
       interaction.reply({ content: strings.noAccount, ephemeral: true });
@@ -118,21 +116,24 @@ class UserAccountManager extends BaseCommentHandler {
     const firstEmbed = new EmbedBuilder()
       .setTitle(`Portfolio for ${user.username}`)
       .setDescription(
-        `Your current holdings for ${activeSeason.name} are as follows:`,
+        `Your current holdings for ${activeSeason.name} are as follows:`
       )
-      .setColor("#663399");
+      .setColor('#663399');
 
     const allEmbeds = [firstEmbed];
 
-    const holdingEntries = Object.entries(currentHoldings);
+    const holdingEntriesZeroesRemoved = Object.entries(currentHoldings).filter(
+      ([, quantity]) => quantity > 0
+    );
 
     // Do the first up to 25 holdings
-    const firstLoopLength = holdingEntries.length > 25
-      ? 25
-      : holdingEntries.length;
+    const firstLoopLength =
+      holdingEntriesZeroesRemoved.length > 25
+        ? 25
+        : holdingEntriesZeroesRemoved.length;
     const firstEmbedFields = [];
     for (let i = 0; i < firstLoopLength; ++i) {
-      const [ticker, quantity] = holdingEntries[i];
+      const [ticker, quantity] = holdingEntriesZeroesRemoved[i];
       firstEmbedFields.push({
         name: ticker,
         value: quantity.toLocaleString(),
@@ -141,20 +142,21 @@ class UserAccountManager extends BaseCommentHandler {
     }
 
     firstEmbed.addFields(firstEmbedFields);
-    if (holdingEntries.length > 25) {
-      for (let i = 25; i < holdingEntries.length; i += 25) {
+    if (holdingEntriesZeroesRemoved.length > 25) {
+      for (let i = 25; i < holdingEntriesZeroesRemoved.length; i += 25) {
         const embed = new EmbedBuilder()
           .setDescription(
-            "a continued display of your stock holdings are below:",
+            'a continued display of your stock holdings are below:'
           )
-          .setColor("#663399")
+          .setColor('#663399')
           .setTimestamp();
         const fields = [];
-        const loopLength = i + 25 > holdingEntries.length
-          ? holdingEntries.length
-          : i + 25;
+        const loopLength =
+          i + 25 > holdingEntriesZeroesRemoved.length
+            ? holdingEntriesZeroesRemoved.length
+            : i + 25;
         for (let j = i; j < loopLength; ++j) {
-          const [ticker, quantity] = holdingEntries[j];
+          const [ticker, quantity] = holdingEntriesZeroesRemoved[j];
           fields.push({
             name: ticker,
             value: quantity.toLocaleString(),

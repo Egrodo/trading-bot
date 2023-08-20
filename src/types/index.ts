@@ -60,8 +60,8 @@ export interface UserAccount {
 }
 
 export enum TradeType {
-  BUY,
-  SELL,
+  SELL = 0,
+  BUY = 1,
 }
 
 export interface PastTrade {
