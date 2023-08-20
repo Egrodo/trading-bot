@@ -112,6 +112,17 @@ class UserAccountManager extends BaseCommentHandler {
     }
 
     const currentHoldings = account.currentHoldings;
+    const holdingEntriesZeroesRemoved = Object.entries(currentHoldings).filter(
+      ([, quantity]) => quantity > 0
+    );
+
+    if (holdingEntriesZeroesRemoved.length === 0) {
+      interaction.reply({
+        content: `You don't have any stocks in your portfolio! Buy some with /buy`,
+        ephemeral: true,
+      });
+      return;
+    }
 
     const firstEmbed = new EmbedBuilder()
       .setTitle(`Portfolio for ${user.username}`)
@@ -121,10 +132,6 @@ class UserAccountManager extends BaseCommentHandler {
       .setColor('#663399');
 
     const allEmbeds = [firstEmbed];
-
-    const holdingEntriesZeroesRemoved = Object.entries(currentHoldings).filter(
-      ([, quantity]) => quantity > 0
-    );
 
     // Do the first up to 25 holdings
     const firstLoopLength =

@@ -66,6 +66,8 @@ function getStrings(): StringsType {
     `You don't own any shares of ${ticker}.`;
   richStrings.notEnoughStock = (ticker: string, quantity: number) =>
     `You don't have enough shares of ${ticker} to sell ${quantity}.`;
+  richStrings.tooSoonToSell = (ticker, lastTradeTimestamp) =>
+    `You can't sell ${ticker} yet since you bought it within the last 24 hours. This is to prevent price arbitrage.`;
 
   return { strings, richStrings };
 }

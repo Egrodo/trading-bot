@@ -420,6 +420,18 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
+    // To prevent arbitrage, disallow user from selling a stock that they purchased within the last day.
+    const lastTradeOfStock = userAccount.tradeHistory.find(
+      (trade) => trade.ticker === ticker
+    );
+    if (lastTradeOfStock.timestamp > Date.now() - 24 * 60 * 60 * 1000) {
+      interaction.reply({
+        content: richStrings.tooSoonToSell(ticker, lastTradeOfStock.timestamp),
+        ephemeral: true,
+      });
+      return;
+    }
+
     const { c: stockPrice } = await this.fetchPriceInfo(ticker, interaction);
 
     const totalIncome = Number((stockPrice * quantity).toFixed(2));
