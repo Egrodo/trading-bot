@@ -39,13 +39,14 @@ async function start() {
     `Successfully registered ${data.length ?? 0} application (/) commands.`
   );
 
+  ErrorReporter.init(client);
+
   console.log('Connecting to database...');
   await DatabaseManager.init();
 
   console.log('Initializing listeners...');
   BotStatusHandler.initWithGuild(client, guild);
   TradingHandler.init(client);
-  ErrorReporter.init(client);
   UserAccountManager.init(client);
   SeasonConfigManager.init(client);
 

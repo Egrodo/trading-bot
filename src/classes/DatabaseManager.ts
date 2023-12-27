@@ -34,10 +34,14 @@ import { TradeType } from '../types';
 class DatabaseManager {
   _dbClient: RedisClientType;
   async init(): Promise<void> {
-    const { dbUrl, dbUser, dbPass } = ENV;
+    const { dbUrl, dbUser, dbPass, dbPort } = ENV;
 
     this._dbClient = createClient({
-      url: `redis://${dbUser}:${dbPass}@${dbUrl}`,
+      password: dbPass,
+      socket: {
+        host: dbUrl,
+        port: +dbPort,
+      },
     });
     this._dbClient.on('error', this.handleError.bind(this));
     await this._dbClient.connect();
@@ -46,7 +50,7 @@ class DatabaseManager {
 
   private handleError(err) {
     console.error(err);
-    ErrorReporter.reportErrorInDebugChannel('Database error', err);
+    // ErrorReporter.reportErrorInDebugChannel('Database error', err);
   }
 
   public async getCachedPrice(ticker: string): Promise<IAggsResults> {

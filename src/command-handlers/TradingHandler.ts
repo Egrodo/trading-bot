@@ -92,6 +92,12 @@ class TradingCommandHandler extends BaseCommentHandler {
 
   private async fetchTradingChannel() {
     const channel = await this._client.channels.cache.get(ENV.tradingChannelId);
+    if (channel == null) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Trading channel not found in cache'
+      );
+      return;
+    }
     if (channel.type === ChannelType.GuildText) {
       this._tradingChannel = channel;
     } else {
@@ -169,6 +175,8 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
+    await interaction.deferReply({ ephemeral: true });
+
     const validRegex = new RegExp(/^[A-z]{1,5}$/g);
     if (!validRegex.test(ticker)) {
       interaction.reply({
@@ -179,10 +187,14 @@ class TradingCommandHandler extends BaseCommentHandler {
     }
 
     const prevClose = await this.fetchPriceInfo(ticker, interaction);
-    if (!prevClose) return;
+    // Errors handled inside fetchPriceInfo
+    if (!prevClose) {
+      return;
+    }
 
     let companyInfo;
     try {
+      // TODO: This price lookup takes a long time. Cache it in mem?
       const companyInfoReq = await PolygonApi.getTickerInfo(ticker);
       if (companyInfoReq?.status === 'OK') {
         companyInfo = companyInfoReq.results;
@@ -269,7 +281,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       reply.files.push(logoAttachment);
     }
 
-    interaction.reply(reply);
+    interaction.editReply(reply);
   }
 
   public async handleBuyCommand(interaction: CommandInteraction) {
