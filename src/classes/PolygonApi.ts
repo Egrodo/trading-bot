@@ -5,7 +5,6 @@ import {
   ITickerDetails,
   restClient,
 } from '@polygon.io/client-js';
-const BASE_URL = 'https://api.polygon.io/v2';
 
 /**
  * Results description:
@@ -28,8 +27,26 @@ class PolygonApi {
     return this._restClient.stocks.previousClose(ticker);
   }
 
+  /**
+   * Ticker information likely doesn't change often so we can cache it in a
+   * quick LRU
+   */
+  _tickerInfoCache: Map<string, ITickerDetails> = new Map();
+  _tickerInfoCacheMaxSize = 100;
   public async getTickerInfo(ticker: string): Promise<ITickerDetails> {
-    return this._restClient.reference.tickerDetails(ticker);
+    if (this._tickerInfoCache.has(ticker)) {
+      return this._tickerInfoCache.get(ticker);
+    }
+
+    const tickerInfo = await this._restClient.reference.tickerDetails(ticker);
+    if (tickerInfo) {
+      this._tickerInfoCache.set(ticker, tickerInfo);
+      if (this._tickerInfoCache.size > this._tickerInfoCacheMaxSize) {
+        this._tickerInfoCache.delete(this._tickerInfoCache.keys().next().value);
+      }
+    }
+
+    return tickerInfo;
   }
 }
 

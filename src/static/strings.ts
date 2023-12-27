@@ -52,6 +52,15 @@ function getStrings(): StringsType {
     `Congrats, you've signed up for this season and have a starting balance of ${formatAmountToReadable(
       balance
     )}. Check out #todo for a list of commands & game information!`;
+  richStrings.buySuccess = (
+    quantity: number,
+    ticker: string,
+    stockPrice: number,
+    totalCost: number
+  ) =>
+    `Succesfully purchased ${quantity} shares of ${ticker} at ${formatAmountToReadable(
+      stockPrice
+    )} per share for a total of ${formatAmountToReadable(totalCost)}`;
   richStrings.invalidStartDateFuture = (startDate: Date) =>
     `Your start date must be in the future, you passed in "${startDate.toDateString()}".`;
   richStrings.invalidStartDateEnd = (startDate: Date, endDate: Date) =>

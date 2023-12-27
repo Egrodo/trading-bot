@@ -361,9 +361,7 @@ class TradingCommandHandler extends BaseCommentHandler {
           iconURL: ENV.botIconUrl,
         })
         .setDescription(
-          `Succesfully purchased ${quantity} shares of ${ticker} at ${formatAmountToReadable(
-            stockPrice
-          )} per share for a total of ${formatAmountToReadable(totalCost)}`
+          richStrings.buySuccess(quantity, ticker, stockPrice, totalCost)
         )
         .setTimestamp();
 
