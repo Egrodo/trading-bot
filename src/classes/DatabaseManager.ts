@@ -6,6 +6,7 @@ import type { IAggsResults, SeasonDocument, UserAccount } from '../types';
 
 import { TradeType } from '../types';
 
+const MAX_CONNECTION_ATTEMPTS = 5;
 /**
  * Database design docs:
  *
@@ -34,7 +35,7 @@ import { TradeType } from '../types';
 class DatabaseManager {
   _dbClient: RedisClientType;
   async init(): Promise<void> {
-    const { dbUrl, dbUser, dbPass, dbPort } = ENV;
+    const { dbUrl, dbPass, dbPort } = ENV;
 
     this._dbClient = createClient({
       password: dbPass,
@@ -45,10 +46,24 @@ class DatabaseManager {
     });
     this._dbClient.on('error', this.handleError.bind(this));
     await this._dbClient.connect();
+    this._reconnectAttempts = 0;
     console.log('Connected to database!');
   }
 
-  private handleError(err) {
+  _reconnectAttempts = 0;
+  private async handleError(err): Promise<void> {
+    if (err.code === 'ECONNRESET') {
+      if (this._reconnectAttempts >= MAX_CONNECTION_ATTEMPTS) {
+        console.error(
+          `Failed to reconnect to database after ${MAX_CONNECTION_ATTEMPTS} attempts. Exiting...`
+        );
+        process.exit(1);
+      }
+      this._reconnectAttempts++;
+      console.error('Database connection reset, attempting to reconnect...');
+      await this._dbClient.disconnect();
+      return this.init();
+    }
     console.error(err);
     ErrorReporter.reportErrorInDebugChannel('Database error', err);
   }
