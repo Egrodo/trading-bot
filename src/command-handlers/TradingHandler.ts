@@ -175,8 +175,6 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
-    await interaction.deferReply({ ephemeral: true });
-
     const validRegex = new RegExp(/^[A-z]{1,5}$/g);
     if (!validRegex.test(ticker)) {
       interaction.reply({
@@ -192,34 +190,12 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
-    let companyInfo;
-    try {
-      // TODO: This price lookup takes a long time. Cache it in mem?
-      const companyInfoReq = await PolygonApi.getTickerInfo(ticker);
-      if (companyInfoReq?.status === 'OK') {
-        companyInfo = companyInfoReq.results;
-      }
-    } catch (err) {
-      if (err.message !== 'Ticker not found.') {
-        ErrorReporter.reportErrorInDebugChannel(
-          `Error fetching company info for ${ticker}`,
-          err
-        );
-      }
-    }
-
-    // Compose data to display
-    const companyName = companyInfo?.name ?? ticker;
-    const logoUrl = companyInfo?.branding?.icon_url
-      ? `${companyInfo?.branding.icon_url}?apiKey=${ENV.polygonKey}`
-      : null;
-
     // If the stock was up for the day, show green. Otherwise show red
     const color = prevClose.c > prevClose.o ? '#00FF00' : '#FF0000';
 
     const embed = new EmbedBuilder()
       .setColor(color)
-      .setTitle(companyName)
+      .setTitle(ticker)
       .setAuthor({
         name: ENV.botName,
         iconURL: ENV.botIconUrl,
@@ -267,21 +243,53 @@ class TradingCommandHandler extends BaseCommentHandler {
       ])
       .setTimestamp();
 
-    if (companyInfo?.homepage_url) {
-      embed.setURL(companyInfo.homepage_url);
-    }
-
     const reply = { embeds: [embed], files: [] };
-    let logoAttachment;
-    if (logoUrl) {
-      logoAttachment = new AttachmentBuilder(logoUrl, {
-        name: `${ticker}-logo.png`,
-      });
-      embed.setThumbnail(`attachment://${logoAttachment.name}`);
-      reply.files.push(logoAttachment);
+
+    await interaction.reply(reply);
+
+    // After replying, see if we can get more info to display
+    let companyInfo;
+    try {
+      const companyInfoReq = await PolygonApi.getTickerInfo(ticker);
+      if (companyInfoReq?.status === 'OK') {
+        companyInfo = companyInfoReq.results;
+      }
+    } catch (err) {
+      // Mute this error because it's not really an issue.
+      if (err.message !== 'Ticker not found.') {
+        ErrorReporter.reportErrorInDebugChannel(
+          `Error fetching company info for ${ticker}`,
+          err
+        );
+      }
     }
 
-    interaction.editReply(reply);
+    if (companyInfo) {
+      console.log(`Found company info for ${ticker}`);
+      if (companyInfo.name != null) {
+        embed.setTitle(companyInfo.name);
+      }
+
+      if (companyInfo?.homepage_url) {
+        embed.setURL(companyInfo.homepage_url);
+      }
+
+      if (companyInfo?.branding?.icon_url != null) {
+        const logoUrl = `${companyInfo.branding.icon_url}?apiKey=${ENV.polygonKey}`;
+        const logoAttachment = new AttachmentBuilder(logoUrl, {
+          name: `${ticker}-logo.png`,
+        });
+        embed.setThumbnail(`attachment://${logoAttachment.name}`);
+        reply.files.push(logoAttachment);
+      }
+
+      try {
+        interaction.editReply(reply);
+      } catch (err) {
+        // If looking for comapny info took too long the interaction edit reply might
+        // throw an error because the interaction expired. Eat it.
+      }
+    }
   }
 
   public async handleBuyCommand(interaction: CommandInteraction) {

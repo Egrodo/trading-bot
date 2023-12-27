@@ -50,7 +50,7 @@ class DatabaseManager {
 
   private handleError(err) {
     console.error(err);
-    // ErrorReporter.reportErrorInDebugChannel('Database error', err);
+    ErrorReporter.reportErrorInDebugChannel('Database error', err);
   }
 
   public async getCachedPrice(ticker: string): Promise<IAggsResults> {
