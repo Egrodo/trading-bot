@@ -84,7 +84,7 @@ class TradingCommandHandler extends BaseCommentHandler {
     },
   };
 
-  private _tradingChannel: TextChannel;
+  _tradingChannel: TextChannel;
   init(client: Client) {
     super.init(client);
     this.fetchTradingChannel();
@@ -320,7 +320,11 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
-    const { c: stockPrice } = await this.fetchPriceInfo(ticker, interaction);
+    const priceInfo = await this.fetchPriceInfo(ticker, interaction);
+    if (!priceInfo) {
+      return;
+    }
+    const { c: stockPrice } = priceInfo;
 
     const totalCost = Number((stockPrice * quantity).toFixed(2));
 
@@ -450,7 +454,11 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
-    const { c: stockPrice } = await this.fetchPriceInfo(ticker, interaction);
+    const priceInfo = await this.fetchPriceInfo(ticker, interaction);
+    if (!priceInfo) {
+      return;
+    }
+    const { c: stockPrice } = priceInfo;
 
     const totalIncome = Number((stockPrice * quantity).toFixed(2));
     const newBalance = userAccount.balance + totalIncome;

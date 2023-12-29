@@ -1,11 +1,12 @@
 import ENV from '../../env.json';
-import ErrorReporter from '../utils/ErrorReporter';
 import {
   IAggsPreviousClose,
   ITickerDetails,
   restClient,
 } from '@polygon.io/client-js';
 
+const MAX_PRICE_CACHE_SIZE = 100;
+const MAX_TICKER_INFO_CACHE_SIZE = 100;
 /**
  * Results description:
  * c: number; The close price for the symbol in the given time period
@@ -21,10 +22,31 @@ import {
 class PolygonApi {
   _restClient = restClient(ENV.polygonKey);
 
+  /**
+   * Stock price information changes once a day (currently) so cache it
+   * keyed with the current date and tickder in a quick LRU
+   */
+  _prevClosePriceCache: Map<string, IAggsPreviousClose> = new Map();
   public async getPrevClosePriceData(
     ticker: string
   ): Promise<IAggsPreviousClose> {
-    return this._restClient.stocks.previousClose(ticker);
+    const tickerKey = `${ticker}:${new Date().toDateString()}`;
+    if (this._prevClosePriceCache.has(tickerKey)) {
+      return this._prevClosePriceCache.get(tickerKey);
+    }
+    const prevClosePriceData = await this._restClient.stocks.previousClose(
+      ticker
+    );
+    if (prevClosePriceData) {
+      this._prevClosePriceCache.set(tickerKey, prevClosePriceData);
+      if (this._prevClosePriceCache.size > MAX_PRICE_CACHE_SIZE) {
+        this._prevClosePriceCache.delete(
+          this._prevClosePriceCache.keys().next().value
+        );
+      }
+    }
+
+    return prevClosePriceData;
   }
 
   /**
@@ -32,7 +54,6 @@ class PolygonApi {
    * quick LRU
    */
   _tickerInfoCache: Map<string, ITickerDetails> = new Map();
-  _tickerInfoCacheMaxSize = 100;
   public async getTickerInfo(ticker: string): Promise<ITickerDetails> {
     if (this._tickerInfoCache.has(ticker)) {
       return this._tickerInfoCache.get(ticker);
@@ -41,7 +62,7 @@ class PolygonApi {
     const tickerInfo = await this._restClient.reference.tickerDetails(ticker);
     if (tickerInfo) {
       this._tickerInfoCache.set(ticker, tickerInfo);
-      if (this._tickerInfoCache.size > this._tickerInfoCacheMaxSize) {
+      if (this._tickerInfoCache.size > MAX_TICKER_INFO_CACHE_SIZE) {
         this._tickerInfoCache.delete(this._tickerInfoCache.keys().next().value);
       }
     }

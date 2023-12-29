@@ -5,6 +5,8 @@ import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 import SeasonConfigManager from './SeasonConfigManager';
+import PolygonApi from '../classes/PolygonApi';
+import { ITickerDetails } from '@polygon.io/client-js';
 
 const STARTING_BALANCE = 1000.0; // $1,000 TODO: This will be different per season in future
 
@@ -89,9 +91,13 @@ class UserAccountManager extends BaseCommentHandler {
       return;
     }
 
-    interaction.reply(richStrings.checkBalance(account.balance));
+    interaction.reply({
+      content: richStrings.checkBalance(account.balance),
+      ephemeral: true,
+    });
   }
 
+  // IDEA: Also show how much cash the user is holding
   public async handlePortfolioCommand(interaction: CommandInteraction) {
     const user = interaction.user;
     const activeSeason = SeasonConfigManager.activeSeason;
@@ -112,6 +118,8 @@ class UserAccountManager extends BaseCommentHandler {
     }
 
     const currentHoldings = account.currentHoldings;
+
+    // This should never happen but just in case
     const holdingEntriesZeroesRemoved = Object.entries(currentHoldings).filter(
       ([, quantity]) => quantity > 0
     );
@@ -124,60 +132,111 @@ class UserAccountManager extends BaseCommentHandler {
       return;
     }
 
-    const firstEmbed = new EmbedBuilder()
+    const embed = new EmbedBuilder()
       .setTitle(`Portfolio for ${user.username}`)
       .setDescription(
         `Your current holdings for ${activeSeason.name} are as follows:`
       )
       .setColor('#663399');
 
-    const allEmbeds = [firstEmbed];
-
     // Do the first up to 25 holdings
     const firstLoopLength =
       holdingEntriesZeroesRemoved.length > 25
         ? 25
         : holdingEntriesZeroesRemoved.length;
-    const firstEmbedFields = [];
+    const embedFields = [];
     for (let i = 0; i < firstLoopLength; ++i) {
       const [ticker, quantity] = holdingEntriesZeroesRemoved[i];
-      firstEmbedFields.push({
+      embedFields.push({
         name: ticker,
         value: quantity.toLocaleString(),
         inline: true,
       });
     }
 
-    firstEmbed.addFields(firstEmbedFields);
-    if (holdingEntriesZeroesRemoved.length > 25) {
-      for (let i = 25; i < holdingEntriesZeroesRemoved.length; i += 25) {
-        const embed = new EmbedBuilder()
-          .setDescription(
-            'a continued display of your stock holdings are below:'
-          )
-          .setColor('#663399')
-          .setTimestamp();
-        const fields = [];
-        const loopLength =
-          i + 25 > holdingEntriesZeroesRemoved.length
-            ? holdingEntriesZeroesRemoved.length
-            : i + 25;
-        for (let j = i; j < loopLength; ++j) {
-          const [ticker, quantity] = holdingEntriesZeroesRemoved[j];
-          fields.push({
-            name: ticker,
-            value: quantity.toLocaleString(),
-            inline: true,
-          });
-        }
-        embed.addFields(fields);
-        allEmbeds.push(embed);
+    embed.setFields(embedFields);
+    // If there are more than 25 holdings we need an additional embed as a single
+    // only supports up to 25 table items.
+    // TODO: Find a better way to display extraneous holdings
+    // if (holdingEntriesZeroesRemoved.length > 25) {
+    //   for (let i = 25; i < holdingEntriesZeroesRemoved.length; i += 25) {
+    //     const embed = new EmbedBuilder()
+    //       .setDescription(
+    //         'a continued display of your stock holdings are below:'
+    //       )
+    //       .setColor('#663399')
+    //       .setTimestamp();
+    //     const fields = [];
+    //     const loopLength =
+    //       i + 25 > holdingEntriesZeroesRemoved.length
+    //         ? holdingEntriesZeroesRemoved.length
+    //         : i + 25;
+    //     for (let j = i; j < loopLength; ++j) {
+    //       const [ticker, quantity] = holdingEntriesZeroesRemoved[j];
+    //       fields.push({
+    //         name: ticker,
+    //         value: quantity.toLocaleString(),
+    //         inline: true,
+    //       });
+    //     }
+    //     embed.addFields(fields);
+    //     allEmbeds.push(embed);
+    //   }
+    // }
+
+    embed.setTimestamp();
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    // Now that we've replied with a dumb portfolio, let's see if we can enrich it with
+    // price / company information. Fetch & format.
+    const tickerInfoPromises = holdingEntriesZeroesRemoved.map(
+      async ([ticker]) => {
+        const tickerInfo = await PolygonApi.getTickerInfo(ticker);
+        return tickerInfo;
       }
+    );
+    const tickerInfo = (await Promise.all(tickerInfoPromises)).reduce<
+      Record<string, ITickerDetails['results']>
+    >((acc, tickerInfo) => {
+      acc[tickerInfo.results.ticker] = tickerInfo.results;
+      return acc;
+    }, {});
+    const tickerPricePromises = holdingEntriesZeroesRemoved.map(
+      async ([ticker]) => {
+        const priceData = await PolygonApi.getPrevClosePriceData(ticker);
+        return priceData;
+      }
+    );
+    const tickerPrices = (await Promise.all(tickerPricePromises)).reduce<
+      Record<string, number>
+    >((acc, tickerPrice) => {
+      acc[tickerPrice.ticker] = tickerPrice.results[0].c;
+      return acc;
+    }, {});
+
+    // Now edit the fields
+    const richEmbedFields = [];
+    for (let i = 0; i < firstLoopLength; ++i) {
+      const [ticker, quantity] = holdingEntriesZeroesRemoved[i];
+      // Prune "inc" and "corp" from the end of the name
+      const stockName = tickerInfo[ticker].name?.replace(
+        /(inc|corp|Inc|Corp|Inc\.|Corp\.|inc\.|corp\.)$/i,
+        ''
+      );
+      const totalPrice = tickerPrices[ticker] * quantity;
+      richEmbedFields.push({
+        name: stockName ?? ticker,
+        value: `${quantity.toLocaleString()} share${
+          quantity > 1 ? 's' : ''
+        } @ $${tickerPrices[ticker].toFixed(
+          2
+        )} = $${totalPrice.toLocaleString()}`,
+        inline: true,
+      });
     }
-
-    allEmbeds.at(-1).setTimestamp();
-
-    interaction.reply({ embeds: allEmbeds });
+    embed.setFields(richEmbedFields);
+    await interaction.editReply({ embeds: [embed] });
   }
 }
 

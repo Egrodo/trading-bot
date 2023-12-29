@@ -269,10 +269,17 @@ class DatabaseManager {
       if (newStockQuantity < 0) {
         throw new Error('Not enough stock to sell');
       }
+
+      const newQuantity = userAccount.currentHoldings[ticker] - quantity;
       const newCurrentHoldings = {
         ...userAccount.currentHoldings,
-        [ticker]: userAccount.currentHoldings[ticker] - quantity,
       };
+
+      if (newQuantity === 0) {
+        delete newCurrentHoldings[ticker];
+      } else {
+        newCurrentHoldings[ticker] = newQuantity;
+      }
 
       const newTrade = {
         ticker,

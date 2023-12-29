@@ -9,6 +9,7 @@ import {
   REST,
   Routes,
 } from 'discord.js';
+import Cron from 'croner';
 
 import TradingHandler from './command-handlers/TradingHandler';
 import BotStatusHandler from './command-handlers/BotStatusHandler';
@@ -38,6 +39,9 @@ async function start() {
   console.log(
     `Successfully registered ${data.length ?? 0} application (/) commands.`
   );
+
+  console.log('Starting jobs...');
+  startJobs();
 
   ErrorReporter.init(client);
 
@@ -75,6 +79,20 @@ export async function registerCommands(): Promise<Array<unknown>> {
   );
 
   return data;
+}
+
+/* Handles starting cron jobs for regular events */
+function startJobs() {
+  // Check every day at midnight to see if the season has changed
+  const seasonChangeJob = Cron('0 0 0 * * *', () => {
+    console.log(
+      `Checking for season update. I will check again at ${seasonChangeJob.nextRun()}`
+    );
+    SeasonConfigManager.checkForSeasonChanges();
+  });
+
+  // TODO: Once daily, post a message in the trading channel
+  // with leaderboard information. Maybe highest gainers/losers?
 }
 
 async function CommandRouter(interaction: ChatInputCommandInteraction) {

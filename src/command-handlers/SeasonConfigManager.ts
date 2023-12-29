@@ -4,7 +4,6 @@ import { CommandInteraction } from 'discord.js';
 import BaseCommentHandler from './BaseCommandHandler';
 import DatabaseManager from '../classes/DatabaseManager';
 import ErrorReporter from '../utils/ErrorReporter';
-import cron from 'node-cron';
 import { richStrings, strings } from '../static/strings';
 
 /**
@@ -65,11 +64,10 @@ class Season extends BaseCommentHandler {
   public init(client) {
     super.init(client);
     this.fetchSeasonInfo();
+  }
 
-    cron.schedule('0 0 0 * * *', () => {
-      console.log('Updating seasons if necessary');
-      this.fetchSeasonInfo();
-    });
+  public async checkForSeasonChanges(): Promise<void> {
+    this.fetchSeasonInfo();
   }
 
   private async fetchSeasonInfo(): Promise<void> {

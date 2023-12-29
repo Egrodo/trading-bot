@@ -57,9 +57,13 @@ export function getNextStockMarketOpeningTimestamp(): number {
 
 export function formatAmountToReadable(balance: number): string {
   if (balance < 0) {
-    return `-$${Number(balance.toFixed(2)).toLocaleString()}`;
+    return `-$${Number(balance.toFixed(2)).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+    })}`;
   }
-  return `$${Number(balance.toFixed(2)).toLocaleString()}`;
+  return `$${Number(balance.toFixed(2)).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+  })}`;
 }
 
 // export default {
