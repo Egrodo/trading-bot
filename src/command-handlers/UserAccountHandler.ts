@@ -97,7 +97,6 @@ class UserAccountManager extends BaseCommentHandler {
     });
   }
 
-  // IDEA: Also show how much cash the user is holding
   public async handlePortfolioCommand(interaction: CommandInteraction) {
     const user = interaction.user;
     const activeSeason = SeasonConfigManager.activeSeason;
@@ -192,25 +191,35 @@ class UserAccountManager extends BaseCommentHandler {
     // price / company information. Fetch & format.
     const tickerInfoPromises = holdingEntriesZeroesRemoved.map(
       async ([ticker]) => {
-        const tickerInfo = await PolygonApi.getTickerInfo(ticker);
-        return tickerInfo;
+        try {
+          const tickerInfo = await PolygonApi.getTickerInfo(ticker);
+          return tickerInfo;
+        } catch (_err) {
+          // Not all stocks have rich info, eat throw
+        }
       }
     );
     const tickerInfo = (await Promise.all(tickerInfoPromises)).reduce<
       Record<string, ITickerDetails['results']>
     >((acc, tickerInfo) => {
+      if (tickerInfo == null) return acc;
       acc[tickerInfo.results.ticker] = tickerInfo.results;
       return acc;
     }, {});
     const tickerPricePromises = holdingEntriesZeroesRemoved.map(
       async ([ticker]) => {
-        const priceData = await PolygonApi.getPrevClosePriceData(ticker);
-        return priceData;
+        try {
+          const priceData = await PolygonApi.getPrevClosePriceData(ticker);
+          return priceData;
+        } catch (_err) {
+          // Not all stocks have rich info, eat throw
+        }
       }
     );
     const tickerPrices = (await Promise.all(tickerPricePromises)).reduce<
       Record<string, number>
     >((acc, tickerPrice) => {
+      if (tickerInfo == null) return acc;
       acc[tickerPrice.ticker] = tickerPrice.results[0].c;
       return acc;
     }, {});
@@ -220,18 +229,23 @@ class UserAccountManager extends BaseCommentHandler {
     for (let i = 0; i < firstLoopLength; ++i) {
       const [ticker, quantity] = holdingEntriesZeroesRemoved[i];
       // Prune "inc" and "corp" from the end of the name
-      const stockName = tickerInfo[ticker].name?.replace(
+      const stockName = tickerInfo[ticker]?.name?.replace(
         /(inc|corp|Inc|Corp|Inc\.|Corp\.|inc\.|corp\.)$/i,
         ''
       );
-      const totalPrice = tickerPrices[ticker] * quantity;
+
+      const totalPrice =
+        tickerPrices[ticker] && tickerPrices[ticker] * quantity;
+      const priceString = tickerPrices[ticker]
+        ? `${quantity.toLocaleString()} share${
+            quantity > 1 ? 's' : ''
+          } @ $${tickerPrices[ticker].toFixed(
+            2
+          )} = $${totalPrice.toLocaleString()}`
+        : quantity.toLocaleString();
       richEmbedFields.push({
         name: stockName ?? ticker,
-        value: `${quantity.toLocaleString()} share${
-          quantity > 1 ? 's' : ''
-        } @ $${tickerPrices[ticker].toFixed(
-          2
-        )} = $${totalPrice.toLocaleString()}`,
+        value: priceString,
         inline: true,
       });
     }

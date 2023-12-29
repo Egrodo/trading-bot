@@ -112,6 +112,27 @@ class DatabaseManager {
     }
   }
 
+  public async getAccountsForSeason(
+    seasonName: string
+  ): Promise<Array<UserAccount>> {
+    try {
+      const userKeys = await this._dbClient.keys(`user:*:${seasonName}`);
+      if (userKeys == null || userKeys.length === 0) {
+        return [];
+      }
+
+      const users = (await this._dbClient.json.mGet(userKeys, '$')) ?? [];
+      const usersFlattened = users.flat();
+
+      return usersFlattened as unknown as Array<UserAccount>;
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to get all users for season',
+        err
+      );
+    }
+  }
+
   /* Stores user data keyed to the current season ID */
   public async registerAccount(
     userId: string,

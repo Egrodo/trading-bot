@@ -54,7 +54,7 @@ class Season extends BaseCommentHandler {
         },
         end: {
           description: 'End the current season early',
-          handler: this.endCurrentSeason.bind(this),
+          handler: this.handleEndCurrentSeasonCommand.bind(this),
           options: [
             {
               name: 'name',
@@ -65,8 +65,26 @@ class Season extends BaseCommentHandler {
           ],
         },
       },
+      // TODO: season list, season remove, season edit
     },
-    // TODO: season list, season remove, season edit
+    leaderboard: {
+      description: 'View player stat information',
+      allowedChannel: ENV.debugInfoChannelId,
+      subCommands: {
+        view: {
+          description: 'View the top players for a season',
+          handler: this.handleViewLeaderboardCommand.bind(this),
+          options: [
+            {
+              name: 'name',
+              description: 'View a specific season',
+              type: 'string',
+              required: false,
+            },
+          ],
+        },
+      },
+    },
   };
 
   public seasons: { [seasonName: string]: SeasonDocument } = {};
@@ -124,7 +142,7 @@ class Season extends BaseCommentHandler {
     }
   }
 
-  public async endCurrentSeason(interaction: CommandInteraction) {
+  public async handleEndCurrentSeasonCommand(interaction: CommandInteraction) {
     if (!this.activeSeason) {
       interaction.reply('There is no active season');
       return;
@@ -148,15 +166,34 @@ class Season extends BaseCommentHandler {
     await this.fetchSeasonInfo();
   }
 
+  public async handleViewLeaderboardCommand(interaction: CommandInteraction) {
+    const seasonName = interaction.options.get('name')?.value as string;
+    const whichSeason = seasonName ?? this.activeSeason?.name;
+
+    if (whichSeason == null) {
+      interaction.reply({
+        content: strings.noActiveSeason,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const accountsForSeason = await DatabaseManager.getAccountsForSeason(
+      whichSeason
+    );
+    // TODO: Flesh out rich leaderboard view
+    console.log(accountsForSeason);
+  }
+
   public async addNewSeason(interaction: CommandInteraction) {
     const name = interaction.options.get('name')?.value as string;
     const startDateStr = interaction.options.get('startdate')?.value as string;
     const endDateStr = interaction.options.get('enddate')?.value as string;
     const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
     // To allow for seasons to be ended & started at the same time, set the time of each new
     // season to be 1 second before midnight
-    startDate.setHours(23, 59, 59, 0);
-    const endDate = new Date(endDateStr);
+    endDate.setHours(23, 59, 59, 0);
 
     if (
       startDate.toString() === 'Invalid Date' ||
