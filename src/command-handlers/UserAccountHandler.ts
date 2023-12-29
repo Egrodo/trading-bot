@@ -7,6 +7,7 @@ import BaseCommentHandler from './BaseCommandHandler';
 import SeasonConfigManager from './SeasonConfigManager';
 import PolygonApi from '../classes/PolygonApi';
 import { ITickerDetails } from '@polygon.io/client-js';
+import { formatAmountToReadable } from '../utils/helpers';
 
 const STARTING_BALANCE = 1000.0; // $1,000 TODO: This will be different per season in future
 
@@ -219,7 +220,7 @@ class UserAccountManager extends BaseCommentHandler {
     const tickerPrices = (await Promise.all(tickerPricePromises)).reduce<
       Record<string, number>
     >((acc, tickerPrice) => {
-      if (tickerInfo == null) return acc;
+      if (tickerPrice == null) return acc;
       acc[tickerPrice.ticker] = tickerPrice.results[0].c;
       return acc;
     }, {});
@@ -237,11 +238,7 @@ class UserAccountManager extends BaseCommentHandler {
       const totalPrice =
         tickerPrices[ticker] && tickerPrices[ticker] * quantity;
       const priceString = tickerPrices[ticker]
-        ? `${quantity.toLocaleString()} share${
-            quantity > 1 ? 's' : ''
-          } @ $${tickerPrices[ticker].toFixed(
-            2
-          )} = $${totalPrice.toLocaleString()}`
+        ? formatAmountToReadable(totalPrice)
         : quantity.toLocaleString();
       richEmbedFields.push({
         name: stockName ?? ticker,

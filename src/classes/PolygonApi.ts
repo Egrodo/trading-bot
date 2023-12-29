@@ -19,6 +19,11 @@ const MAX_TICKER_INFO_CACHE_SIZE = 100;
  * vw: number; The volume weighted average price.
  */
 
+// TODO: IDEA: Another smart way to conserve API calls would be to take
+// all stocks whose value was requested in the last 24 hours and batch
+// request them at the beginning of each trading day so their price is
+// fetched. Can also do this in a way that doesn't trigger API limits.
+// When do I request them? I have to figure out when the API updates its daily data.
 class PolygonApi {
   _restClient = restClient(ENV.polygonKey);
 
@@ -27,6 +32,7 @@ class PolygonApi {
    * keyed with the current date and tickder in a quick LRU
    */
   _prevClosePriceCache: Map<string, IAggsPreviousClose> = new Map();
+  /* Get price information from the last market day's close */
   public async getPrevClosePriceData(
     ticker: string
   ): Promise<IAggsPreviousClose> {

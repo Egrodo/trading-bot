@@ -114,7 +114,7 @@ class DatabaseManager {
 
   public async getAccountsForSeason(
     seasonName: string
-  ): Promise<Array<UserAccount>> {
+  ): Promise<Array<[accountId: string, accountData: UserAccount]>> {
     try {
       const userKeys = await this._dbClient.keys(`user:*:${seasonName}`);
       if (userKeys == null || userKeys.length === 0) {
@@ -122,9 +122,14 @@ class DatabaseManager {
       }
 
       const users = (await this._dbClient.json.mGet(userKeys, '$')) ?? [];
-      const usersFlattened = users.flat();
+      const usersTuple = users
+        .flat()
+        .map<[string, UserAccount]>((user, i) => [
+          userKeys[i].split(':')[1],
+          user as unknown as UserAccount,
+        ]);
 
-      return usersFlattened as unknown as Array<UserAccount>;
+      return usersTuple;
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
         'Database Error: Failed to get all users for season',

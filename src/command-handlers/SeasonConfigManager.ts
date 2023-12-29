@@ -1,11 +1,14 @@
 import { CommandListType, SeasonDocument } from '../types';
 import ENV from '../../env.json';
-import { CommandInteraction } from 'discord.js';
+import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import BaseCommentHandler from './BaseCommandHandler';
 import DatabaseManager from '../classes/DatabaseManager';
 import ErrorReporter from '../utils/ErrorReporter';
 import { richStrings, strings } from '../static/strings';
+import PolygonApi from '../classes/PolygonApi';
+import { formatAmountToReadable } from '../utils/helpers';
 
+const MAX_USERS_TO_SHOW_ON_LEADERBOARD = 10;
 /**
  * Handles configuration of the current season that is in play. Will include commands
  * for admins to configure the length, starting balance, rules, etc, of the seasons.
@@ -178,11 +181,92 @@ class Season extends BaseCommentHandler {
       return;
     }
 
+    const embed = new EmbedBuilder()
+      .setTitle(richStrings.leaderboardTitle(whichSeason))
+      .setDescription(strings.leaderboardDescription)
+      .setColor('#663399')
+      .setTimestamp();
+
     const accountsForSeason = await DatabaseManager.getAccountsForSeason(
       whichSeason
     );
-    // TODO: Flesh out rich leaderboard view
-    console.log(accountsForSeason);
+
+    // Defer reply since this will take awhile...
+    await interaction.deferReply();
+
+    // Get all tickers owned by all users
+    const tickersToFetch = accountsForSeason.reduce<string[]>(
+      (acc, [_accountId, accountData]) => {
+        acc.push(...Object.keys(accountData.currentHoldings));
+        return acc;
+      },
+      []
+    );
+    const tickerPricePromises = tickersToFetch.map<Promise<[string, number]>>(
+      async (ticker) => {
+        try {
+          const priceData = await PolygonApi.getPrevClosePriceData(ticker);
+          return [ticker, priceData.results[0].c];
+        } catch (_err) {
+          // TODO: This shouldn't throw unless a stock is delisted or something...
+          ErrorReporter.reportErrorInDebugChannel(
+            `Error fetching ticker price`,
+            ticker,
+            _err
+          );
+          return [ticker, 0];
+        }
+      }
+    );
+    const tickerPrices = (await Promise.all(tickerPricePromises)).reduce<
+      Record<string, number>
+    >((acc, [ticker, price]) => {
+      acc[ticker] = price;
+      return acc;
+    }, {});
+
+    // Now, for each player this season, calculate their total account value
+    const accountValues = accountsForSeason.map<[string, number]>(
+      ([accountId, accountData]) => {
+        let totalValue = 0;
+        for (const [ticker, quantity] of Object.entries(
+          accountData.currentHoldings
+        )) {
+          totalValue += quantity * tickerPrices[ticker];
+        }
+        return [accountId, totalValue];
+      }
+    );
+
+    const sortedAccountValues = accountValues.sort((a, b) => b[1] - a[1]);
+
+    const winners = sortedAccountValues.splice(
+      0,
+      MAX_USERS_TO_SHOW_ON_LEADERBOARD
+    );
+
+    // Also need to fetch each eligible account's username
+    const usernamePromises = winners.map(([accountId]) =>
+      this._client.users.fetch(accountId)
+    );
+
+    // Indexed by same as winners
+    const usernames = await Promise.all(usernamePromises);
+
+    // Now that we have the account values, we can build the embed
+    const fields = [];
+    winners.forEach(([accountId, accountValue], i) => {
+      const username = usernames[i].tag ?? accountId;
+      fields.push({
+        name: username,
+        value: formatAmountToReadable(accountValue),
+        inline: true,
+      });
+    });
+
+    embed.setFields(fields);
+
+    interaction.editReply({ embeds: [embed] });
   }
 
   public async addNewSeason(interaction: CommandInteraction) {
