@@ -52,6 +52,18 @@ class Season extends BaseCommentHandler {
             },
           ],
         },
+        end: {
+          description: 'End the current season early',
+          handler: this.endCurrentSeason.bind(this),
+          options: [
+            {
+              name: 'name',
+              description: 'To confirm, type the name of the current season',
+              type: 'string',
+              required: true,
+            },
+          ],
+        },
       },
     },
     // TODO: season list, season remove, season edit
@@ -88,13 +100,14 @@ class Season extends BaseCommentHandler {
     if (activeSeason) {
       this.activeSeason = activeSeason;
       // TODO: This might also need to trigger some other things,
-      // like announcement strings in the server
+      // like announcement strings in the trading channel
       console.log(`Active season is "${this.activeSeason.name}"`);
     } else {
       console.log(`There is currently no active season.`);
     }
   }
 
+  // TODO: Is it correct for this to be public? Can't I run it like above without?
   public handleCurrentSeasonCommand(interaction: CommandInteraction) {
     if (this.activeSeason) {
       interaction.reply(
@@ -111,11 +124,38 @@ class Season extends BaseCommentHandler {
     }
   }
 
+  public async endCurrentSeason(interaction: CommandInteraction) {
+    if (!this.activeSeason) {
+      interaction.reply('There is no active season');
+      return;
+    }
+    const name = interaction.options.get('name')?.value as string;
+    if (name !== this.activeSeason.name) {
+      interaction.reply({
+        content: richStrings.seasonNameMismatch(name, this.activeSeason.name),
+        ephemeral: true,
+      });
+      return;
+    }
+    await DatabaseManager.editSeason(
+      name,
+      new Date(this.activeSeason.start),
+      new Date(new Date().getTime() - 10)
+    );
+    await interaction.reply(
+      `${interaction.user.username} ended the season ${name}`
+    );
+    await this.fetchSeasonInfo();
+  }
+
   public async addNewSeason(interaction: CommandInteraction) {
     const name = interaction.options.get('name')?.value as string;
     const startDateStr = interaction.options.get('startdate')?.value as string;
     const endDateStr = interaction.options.get('enddate')?.value as string;
     const startDate = new Date(startDateStr);
+    // To allow for seasons to be ended & started at the same time, set the time of each new
+    // season to be 1 second before midnight
+    startDate.setHours(23, 59, 59, 0);
     const endDate = new Date(endDateStr);
 
     if (
@@ -155,6 +195,15 @@ class Season extends BaseCommentHandler {
         });
         return;
       }
+    }
+
+    // Make sure the name of this new season is unique
+    if (this.seasons[name]) {
+      interaction.reply({
+        content: strings.duplicateSeasonName,
+        ephemeral: true,
+      });
+      return;
     }
 
     try {

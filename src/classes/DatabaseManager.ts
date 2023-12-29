@@ -198,6 +198,24 @@ class DatabaseManager {
     }
   }
 
+  public async editSeason(name: string, start: Date, end: Date): Promise<void> {
+    const season = {
+      name: name,
+      start: start.getTime(),
+      end: end.getTime(),
+    };
+
+    try {
+      await this._dbClient.json.set(`season:${name}`, '$', season);
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        'Database Error: Failed to edit season document',
+        err
+      );
+      throw err;
+    }
+  }
+
   public async buyStocks({
     userId,
     userAccount,

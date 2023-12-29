@@ -19,6 +19,7 @@ function getStrings(): StringsType {
     'Invalid date format. Please use a valid date format like YYYY-MM-DD';
 
   strings.noActiveSeason = `There is no active season right now. Bug your admins to create one!`;
+  strings.duplicateSeasonName = `There is already a season with that name.`;
   strings.errorBuyingStock = `Failed to buy stock. ${strings.reportedAlready}`;
   strings.errorSellingStock = `Failed to sell stock. ${strings.reportedAlready}`;
   (strings.errorFetchingPrice = `Error fetching price data, might be rate-limited. Try again in a few minutes.`),
@@ -77,6 +78,8 @@ function getStrings(): StringsType {
     `You don't have enough shares of ${ticker} to sell ${quantity}.`;
   richStrings.tooSoonToSell = (ticker, lastTradeTimestamp) =>
     `You can't sell ${ticker} yet since you bought it within the last 24 hours. This is to prevent price arbitrage.`;
+  richStrings.seasonNameMismatch = (name: string, activeName: string) =>
+    `The season you're trying to end, ${name}, doesn't match the active season, ${activeName}.`;
 
   return { strings, richStrings };
 }
