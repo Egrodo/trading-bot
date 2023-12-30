@@ -235,10 +235,8 @@ class UserAccountManager extends BaseCommentHandler {
         ''
       );
 
-      const totalPrice =
-        tickerPrices[ticker] && tickerPrices[ticker] * quantity;
       const priceString = tickerPrices[ticker]
-        ? formatAmountToReadable(totalPrice)
+        ? richStrings.portfolioShares(quantity, tickerPrices[ticker])
         : quantity.toLocaleString();
       richEmbedFields.push({
         name: stockName ?? ticker,

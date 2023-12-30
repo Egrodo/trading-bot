@@ -85,6 +85,12 @@ function getStrings(): StringsType {
     `The season you're trying to end, ${name}, doesn't match the active season, ${activeName}.`;
   richStrings.leaderboardTitle = (seasonName: string) =>
     `Leaderboard for season "${seasonName}"`;
+  richStrings.portfolioShares = (quantity: number, unitPrice: number) =>
+    `${quantity} ${
+      quantity === 1 ? 'share' : 'shares'
+    } currently valued at ${formatAmountToReadable(
+      unitPrice
+    )} each, worth ${formatAmountToReadable(quantity * unitPrice)}`;
   return { strings, richStrings };
 }
 

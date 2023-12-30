@@ -91,8 +91,7 @@ function startJobs() {
     SeasonConfigManager.checkForSeasonChanges();
   });
 
-  // TODO: Once daily, post a message in the trading channel
-  // with leaderboard information. Maybe highest gainers/losers?
+  // TODO: IDEA: Daily leaderboard postings?
 }
 
 async function CommandRouter(interaction: ChatInputCommandInteraction) {
@@ -102,7 +101,7 @@ async function CommandRouter(interaction: ChatInputCommandInteraction) {
   }
   const { commandName } = interaction;
 
-  console.count(`Received ${commandName} command`);
+  console.count(`Received ${commandName} command from ${interaction.user.tag}`);
 
   if (TradingHandler.commands.hasOwnProperty(commandName)) {
     return TradingHandler.onMessage(interaction);
