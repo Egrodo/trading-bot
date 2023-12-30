@@ -13,7 +13,7 @@ import { CommandListType, IAggsResults } from '../types';
 import { IAggsPreviousClose } from '@polygon.io/client-js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
-import SeasonConfigManager from './SeasonConfigManager';
+import SeasonManager from './SeasonManager';
 import { richStrings, strings } from '../static/strings';
 import { formatAmountToReadable } from '../utils/helpers';
 import fsPromise from 'fs/promises';
@@ -293,7 +293,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   public async handleBuyCommand(interaction: CommandInteraction) {
-    if (!SeasonConfigManager.activeSeason) {
+    if (!SeasonManager.activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,
         ephemeral: true,
@@ -309,7 +309,7 @@ class TradingCommandHandler extends BaseCommentHandler {
     // Get user info to validate that they can afford this transaction
     const userAccount = await DatabaseManager.getAccount(
       interaction.user.id,
-      SeasonConfigManager.activeSeason.name
+      SeasonManager.activeSeason.name
     );
 
     if (!userAccount) {
@@ -350,7 +350,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       await DatabaseManager.buyStocks({
         userId: interaction.user.id,
         userAccount,
-        seasonName: SeasonConfigManager.activeSeason.name,
+        seasonName: SeasonManager.activeSeason.name,
         ticker,
         price: stockPrice,
         quantity,
@@ -397,7 +397,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   public async handleSellCommand(interaction: CommandInteraction) {
-    if (!SeasonConfigManager.activeSeason) {
+    if (!SeasonManager.activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,
         ephemeral: true,
@@ -413,7 +413,7 @@ class TradingCommandHandler extends BaseCommentHandler {
     // Get user info to validate that they own the stock they're trying to sell
     const userAccount = await DatabaseManager.getAccount(
       interaction.user.id,
-      SeasonConfigManager.activeSeason.name
+      SeasonManager.activeSeason.name
     );
 
     if (!userAccount) {
@@ -468,7 +468,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       await DatabaseManager.sellStocks({
         userId: interaction.user.id,
         userAccount,
-        seasonName: SeasonConfigManager.activeSeason.name,
+        seasonName: SeasonManager.activeSeason.name,
         ticker,
         price: stockPrice,
         quantity,

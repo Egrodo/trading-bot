@@ -17,7 +17,7 @@ import ErrorReporter from './utils/ErrorReporter';
 import { formatSlashCommands } from './utils/slashCommandBuilder';
 import DatabaseManager from './classes/DatabaseManager';
 import UserAccountManager from './command-handlers/UserAccountHandler';
-import SeasonConfigManager from './command-handlers/SeasonConfigManager';
+import SeasonManager from './command-handlers/SeasonManager';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
@@ -29,6 +29,8 @@ let guild = null;
 client.once(Events.ClientReady, start);
 
 async function start() {
+  ErrorReporter.init(client);
+
   console.log(`Logged in as ${client.user.tag}!`);
 
   guild = await client.guilds.fetch(ENV.guildId);
@@ -43,8 +45,6 @@ async function start() {
   console.log('Starting jobs...');
   startJobs();
 
-  ErrorReporter.init(client);
-
   console.log('Connecting to database...');
   await DatabaseManager.init();
 
@@ -52,10 +52,10 @@ async function start() {
   BotStatusHandler.initWithGuild(client, guild);
   TradingHandler.init(client);
   UserAccountManager.init(client);
-  SeasonConfigManager.init(client);
+  await SeasonManager.init(client);
 
   client.on(Events.InteractionCreate, CommandRouter);
-  console.log('Ready!');
+  console.log('Trading bot successfully started!');
 }
 
 export async function registerCommands(): Promise<Array<unknown>> {
@@ -63,9 +63,7 @@ export async function registerCommands(): Promise<Array<unknown>> {
   const TradingCommands = formatSlashCommands(TradingHandler.commands);
   const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
   const UserAccountCommands = formatSlashCommands(UserAccountManager.commands);
-  const SeasonConfigCommands = formatSlashCommands(
-    SeasonConfigManager.commands
-  );
+  const SeasonManagerCommands = formatSlashCommands(SeasonManager.commands);
   const data: any = await rest.put(
     Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
     {
@@ -73,7 +71,7 @@ export async function registerCommands(): Promise<Array<unknown>> {
         ...TradingCommands,
         ...BotStatusCommands,
         ...UserAccountCommands,
-        ...SeasonConfigCommands,
+        ...SeasonManagerCommands,
       ],
     }
   );
@@ -88,7 +86,7 @@ function startJobs() {
     console.log(
       `Checking for season update. I will check again at ${seasonChangeJob.nextRun()}`
     );
-    SeasonConfigManager.checkForSeasonChanges();
+    SeasonManager.checkForSeasonChanges();
   });
 
   // TODO: IDEA: Daily leaderboard postings?
@@ -112,8 +110,8 @@ async function CommandRouter(interaction: ChatInputCommandInteraction) {
   if (UserAccountManager.commands.hasOwnProperty(commandName)) {
     return UserAccountManager.onMessage(interaction);
   }
-  if (SeasonConfigManager.commands.hasOwnProperty(commandName)) {
-    return SeasonConfigManager.onMessage(interaction);
+  if (SeasonManager.commands.hasOwnProperty(commandName)) {
+    return SeasonManager.onMessage(interaction);
   }
 }
 

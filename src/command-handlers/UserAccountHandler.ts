@@ -4,10 +4,9 @@ import { richStrings, strings } from '../static/strings';
 import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
-import SeasonConfigManager from './SeasonConfigManager';
+import SeasonManager from './SeasonManager';
 import PolygonApi from '../classes/PolygonApi';
 import { ITickerDetails } from '@polygon.io/client-js';
-import { formatAmountToReadable } from '../utils/helpers';
 
 /* Handles operations to user account information */
 class UserAccountManager extends BaseCommentHandler {
@@ -29,9 +28,9 @@ class UserAccountManager extends BaseCommentHandler {
     },
   };
 
-  public async handleSignupCommand(interaction: CommandInteraction) {
+  private async handleSignupCommand(interaction: CommandInteraction) {
     const user = interaction.user;
-    const currentSeason = SeasonConfigManager.activeSeason;
+    const currentSeason = SeasonManager.activeSeason;
     if (!currentSeason) {
       interaction.reply({
         content: strings.signupFailureNoSeason,
@@ -58,12 +57,12 @@ class UserAccountManager extends BaseCommentHandler {
 
       await DatabaseManager.registerAccount(
         user.id,
-        SeasonConfigManager.activeSeason.startingBalance,
+        SeasonManager.activeSeason.startingBalance,
         seasonName
       );
       interaction.reply({
         content: richStrings.signupSuccess(
-          SeasonConfigManager.activeSeason.startingBalance
+          SeasonManager.activeSeason.startingBalance
         ),
         ephemeral: true,
       });
@@ -73,9 +72,9 @@ class UserAccountManager extends BaseCommentHandler {
     }
   }
 
-  public async handleBalanceCommand(interaction: CommandInteraction) {
+  private async handleBalanceCommand(interaction: CommandInteraction) {
     const user = interaction.user;
-    const activeSeason = SeasonConfigManager.activeSeason;
+    const activeSeason = SeasonManager.activeSeason;
     if (!activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,
@@ -98,9 +97,9 @@ class UserAccountManager extends BaseCommentHandler {
     });
   }
 
-  public async handlePortfolioCommand(interaction: CommandInteraction) {
+  private async handlePortfolioCommand(interaction: CommandInteraction) {
     const user = interaction.user;
-    const activeSeason = SeasonConfigManager.activeSeason;
+    const activeSeason = SeasonManager.activeSeason;
     if (!activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,

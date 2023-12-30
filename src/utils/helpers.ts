@@ -4,7 +4,7 @@
 import fsPromise from 'fs/promises';
 import ErrorReporter from './ErrorReporter';
 
-export function Guard() {
+export function GuardClientExists() {
   return function (
     target: any,
     methodName: string,

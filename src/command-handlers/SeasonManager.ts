@@ -6,7 +6,7 @@ import DatabaseManager from '../classes/DatabaseManager';
 import ErrorReporter from '../utils/ErrorReporter';
 import { richStrings, strings } from '../static/strings';
 import PolygonApi from '../classes/PolygonApi';
-import { formatAmountToReadable } from '../utils/helpers';
+import { GuardClientExists, formatAmountToReadable } from '../utils/helpers';
 
 const MAX_USERS_TO_SHOW_ON_LEADERBOARD = 10;
 /**
@@ -31,7 +31,7 @@ class Season extends BaseCommentHandler {
         },
         add: {
           description: 'Add a new season to the queue',
-          handler: this.addNewSeason.bind(this),
+          handler: this.handleAddNewSeasonCommand.bind(this),
           options: [
             {
               name: 'name',
@@ -101,11 +101,12 @@ class Season extends BaseCommentHandler {
 
   public activeSeason?: SeasonDocument;
 
-  public init(client) {
+  public async init(client) {
     super.init(client);
-    this.fetchSeasonInfo();
+    return this.fetchSeasonInfo();
   }
 
+  @GuardClientExists()
   public async checkForSeasonChanges(): Promise<void> {
     this.fetchSeasonInfo();
   }
@@ -135,8 +136,7 @@ class Season extends BaseCommentHandler {
     }
   }
 
-  // TODO: Is it correct for this to be public? Can't I run it like above without?
-  public handleCurrentSeasonCommand(interaction: CommandInteraction) {
+  private handleCurrentSeasonCommand(interaction: CommandInteraction) {
     if (this.activeSeason) {
       interaction.reply(
         `Currently in season "${
@@ -152,7 +152,7 @@ class Season extends BaseCommentHandler {
     }
   }
 
-  public async handleEndCurrentSeasonCommand(interaction: CommandInteraction) {
+  private async handleEndCurrentSeasonCommand(interaction: CommandInteraction) {
     if (!this.activeSeason) {
       interaction.reply('There is no active season');
       return;
@@ -276,7 +276,7 @@ class Season extends BaseCommentHandler {
     interaction.editReply({ embeds: [embed] });
   }
 
-  public async addNewSeason(interaction: CommandInteraction) {
+  private async handleAddNewSeasonCommand(interaction: CommandInteraction) {
     const name = interaction.options.get('name')?.value as string;
     const startDateStr = interaction.options.get('startdate')?.value as string;
     const endDateStr = interaction.options.get('enddate')?.value as string;

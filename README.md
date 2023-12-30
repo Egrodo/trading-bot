@@ -16,9 +16,10 @@ customizable fantasy stock trading bot!
   amount to trade with
 - Users can buy and sell stocks with this balance
 - Users can check their stock portfolio or cash balance at any time
+- Leaderboard sorted by users with highest account value
 
 ## Planned Features:
 
-- At the end of the season the bot will post the final leaderboard to the server
+- End of season leaderboards & announcements
 - Customizable challenges / restrictions per-season
 - Placing in a season will reward winners with special roles as reward

@@ -6,7 +6,7 @@ import {
   TextChannel,
   User,
 } from 'discord.js';
-import { Guard } from './helpers';
+import { GuardClientExists } from './helpers';
 
 class ErrorReporter {
   _client: Client;
@@ -35,8 +35,8 @@ class ErrorReporter {
     }
   }
 
-  @Guard()
   // Reports an error to designated channel
+  @GuardClientExists()
   public async reportErrorInDebugChannel(
     msg: string,
     ...errorInformation: any
