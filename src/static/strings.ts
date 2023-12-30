@@ -26,6 +26,7 @@ function getStrings(): StringsType {
   strings.errorAddingSeason = `There was an error adding your season. I've reported this error, please try again later.`;
   strings.leaderboardDescription =
     'Top 10 traders this season, by overall account value';
+  strings.invalidStartingBalance = `Starting balance must be an integer no smaller than 1 and no bigger than 100,000,000.`;
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${

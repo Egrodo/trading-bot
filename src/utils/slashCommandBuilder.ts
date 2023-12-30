@@ -25,7 +25,7 @@ function formatSlashCommandOptions(
       }
       case 'number': {
         // todo
-        throw new Error('Boolean options not yet implemented');
+        throw new Error('Number options not yet implemented');
       }
       case 'boolean': {
         // todo
@@ -42,6 +42,9 @@ function formatSlashCommandOptions(
           return builtOption;
         });
         break;
+      }
+      default: {
+        throw new Error(`Invalid option type ${option.type}`);
       }
     }
   });

@@ -203,11 +203,17 @@ class DatabaseManager {
    * Only one season allowed at a time, unique names required.
    * Callee should ensure their new season doesn't overlap with an existing one before adding
    */
-  public async addSeason(name: string, start: Date, end: Date): Promise<void> {
-    const season = {
+  public async addSeason(
+    name: string,
+    start: Date,
+    end: Date,
+    startingBalance: number
+  ): Promise<void> {
+    const season /* : SeasonDocument */ = {
       name: name,
       start: start.getTime(),
       end: end.getTime(),
+      startingBalance,
     };
 
     try {

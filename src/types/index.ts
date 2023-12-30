@@ -74,6 +74,7 @@ export interface PastTrade {
 
 export interface SeasonDocument {
   name: string;
+  startingBalance: number; // Total balance represented in dollars with 2 decimal places of cents
   start: number;
   end: number;
 }

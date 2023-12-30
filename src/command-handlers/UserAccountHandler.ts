@@ -9,8 +9,6 @@ import PolygonApi from '../classes/PolygonApi';
 import { ITickerDetails } from '@polygon.io/client-js';
 import { formatAmountToReadable } from '../utils/helpers';
 
-const STARTING_BALANCE = 1000.0; // $1,000 TODO: This will be different per season in future
-
 /* Handles operations to user account information */
 class UserAccountManager extends BaseCommentHandler {
   public commands: CommandListType = {
@@ -60,11 +58,13 @@ class UserAccountManager extends BaseCommentHandler {
 
       await DatabaseManager.registerAccount(
         user.id,
-        STARTING_BALANCE,
+        SeasonConfigManager.activeSeason.startingBalance,
         seasonName
       );
       interaction.reply({
-        content: richStrings.signupSuccess(STARTING_BALANCE),
+        content: richStrings.signupSuccess(
+          SeasonConfigManager.activeSeason.startingBalance
+        ),
         ephemeral: true,
       });
     } catch (err) {

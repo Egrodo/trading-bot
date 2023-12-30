@@ -53,6 +53,13 @@ class Season extends BaseCommentHandler {
               type: 'string',
               required: true,
             },
+            {
+              name: 'startingbalance',
+              description:
+                'The starting balance for each user, an integer in dollars (no cents)',
+              type: 'integer',
+              required: true,
+            },
           ],
         },
         end: {
@@ -279,6 +286,7 @@ class Season extends BaseCommentHandler {
     // season to be 1 second before midnight
     endDate.setHours(23, 59, 59, 0);
 
+    // Date validation
     if (
       startDate.toString() === 'Invalid Date' ||
       endDate.toString() === 'Invalid Date'
@@ -327,8 +335,28 @@ class Season extends BaseCommentHandler {
       return;
     }
 
+    // Make sure the starting balance makes sense
+    const startingBalance = interaction.options.get('startingbalance')
+      ?.value as number;
+    if (
+      !Number.isInteger(startingBalance) ||
+      startingBalance < 1 ||
+      startingBalance > 100000000
+    ) {
+      interaction.reply({
+        content: strings.invalidStartingBalance,
+        ephemeral: true,
+      });
+      return;
+    }
+
     try {
-      await DatabaseManager.addSeason(name, startDate, endDate);
+      await DatabaseManager.addSeason(
+        name,
+        startDate,
+        endDate,
+        startingBalance
+      );
     } catch (err) {
       interaction.reply({
         content: strings.errorAddingSeason,
