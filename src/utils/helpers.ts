@@ -4,10 +4,14 @@
 import fsPromise from 'fs/promises';
 import ErrorReporter from './ErrorReporter';
 
+/**
+ * Decorator that should be used on all public class methods
+ * to ensure the client has been initialized before use.
+ */
 export function GuardClientExists() {
   return function (
     target: any,
-    methodName: string,
+    _methodName: string,
     descriptor: PropertyDescriptor
   ) {
     const originalMethod = descriptor.value;

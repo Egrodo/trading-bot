@@ -1,21 +1,14 @@
 import { CommandInteraction } from 'discord.js';
 
-export interface IAggsResults {
-  T?: string;
-  c?: number;
-  h?: number;
-  l?: number;
-  n?: number;
-  o?: number;
-  t?: number;
-  v?: number;
-  vw?: number;
-}
-
 export interface CommandType {
   description: string;
   allowedChannel: string;
   handler?: (interaction: CommandInteraction) => Promise<void>; // undefined if subcommands are present
+  // If a command is "admin-only" we will ensure the user has PermissionFlagsBits.Administrator before
+  // they can use the command. Later this could be changed to "gamemakerOnly" and given to mods too.
+  adminsOnly?: boolean;
+  /* By default all commands are given setDMPermission(false) */
+  allowDm?: boolean;
 }
 
 export interface CommandWithOptionsType extends CommandType {
@@ -57,6 +50,19 @@ export interface UserAccount {
   currentHoldings: { [ticker: string]: number }; // Number of shares of each stock
   tradeHistory: PastTrade[];
   signupTs: number;
+}
+
+// Polygon result api TODO why not use polygon api types?
+export interface IAggsResults {
+  T?: string;
+  c?: number;
+  h?: number;
+  l?: number;
+  n?: number;
+  o?: number;
+  t?: number;
+  v?: number;
+  vw?: number;
 }
 
 export enum TradeType {

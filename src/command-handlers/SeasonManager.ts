@@ -24,6 +24,7 @@ class Season extends BaseCommentHandler {
     season: {
       description: 'Get or set trading game seasons',
       allowedChannel: ENV.debugInfoChannelId,
+      adminsOnly: true,
       subCommands: {
         current: {
           description: 'Get information about the current season',
@@ -80,6 +81,7 @@ class Season extends BaseCommentHandler {
     leaderboard: {
       description: 'View player stat information',
       allowedChannel: ENV.debugInfoChannelId,
+      adminsOnly: true,
       subCommands: {
         view: {
           description: 'View the top players for a season',

@@ -1,7 +1,11 @@
 import { CommandListType } from '../types';
 import ENV from '../../env.json';
 import { richStrings, strings } from '../static/strings';
-import { CommandInteraction, EmbedBuilder } from 'discord.js';
+import {
+  CommandInteraction,
+  EmbedBuilder,
+  PermissionFlagsBits,
+} from 'discord.js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 import SeasonManager from './SeasonManager';

@@ -1,4 +1,8 @@
-import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from 'discord.js';
+import {
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+  SlashCommandSubcommandBuilder,
+} from 'discord.js';
 import {
   CommandListType,
   CommandWithOptionsType,
@@ -66,6 +70,18 @@ export function formatSlashCommands(
     const slashCommand = new SlashCommandBuilder()
       .setName(name)
       .setDescription(description);
+
+    if (command.adminsOnly === true) {
+      slashCommand.setDefaultMemberPermissions(
+        PermissionFlagsBits.Administrator
+      );
+    }
+
+    if (command.allowDm === true) {
+      slashCommand.setDMPermission(true);
+    } else {
+      slashCommand.setDMPermission(false);
+    }
 
     if ('options' in command) {
       formatSlashCommandOptions(slashCommand, command);

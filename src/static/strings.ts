@@ -1,4 +1,5 @@
 import { formatAmountToReadable } from '../utils/helpers';
+/* eslint quotes: ["error", "backtick"] */
 
 interface StringsType {
   strings: Record<string, string>;
@@ -24,9 +25,9 @@ function getStrings(): StringsType {
   strings.errorSellingStock = `Failed to sell stock. ${strings.reportedAlready}`;
   strings.errorFetchingPrice = `Error fetching price data, might be rate-limited. Try again in a few minutes.`;
   strings.errorAddingSeason = `There was an error adding your season. I've reported this error, please try again later.`;
-  strings.leaderboardDescription =
-    'Top 10 traders this season, by overall account value';
+  strings.leaderboardDescription = `Top 10 traders this season, by overall account value`;
   strings.invalidStartingBalance = `Starting balance must be an integer no smaller than 1 and no bigger than 100,000,000.`;
+  strings.noPermission = `You don't have permission do that`;
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${
@@ -91,6 +92,9 @@ function getStrings(): StringsType {
     } currently valued at ${formatAmountToReadable(
       unitPrice
     )} each, worth ${formatAmountToReadable(quantity * unitPrice)}`;
+  richStrings.wrongChannel = (channelId: string) =>
+    `This command is only available in <#${channelId}>`;
+
   return { strings, richStrings };
 }
 
