@@ -1,16 +1,13 @@
 import { CommandListType } from '../types';
 import ENV from '../../env.json';
 import { richStrings, strings } from '../static/strings';
-import {
-  CommandInteraction,
-  EmbedBuilder,
-  PermissionFlagsBits,
-} from 'discord.js';
+import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 import SeasonManager from './SeasonManager';
 import PolygonApi from '../classes/PolygonApi';
 import { ITickerDetails } from '@polygon.io/client-js';
+import { formatAmountToReadable } from '../utils/helpers';
 
 /* Handles operations to user account information */
 class UserAccountManager extends BaseCommentHandler {
@@ -220,11 +217,15 @@ class UserAccountManager extends BaseCommentHandler {
         }
       }
     );
+
+    let portfolioSum = 0;
     const tickerPrices = (await Promise.all(tickerPricePromises)).reduce<
       Record<string, number>
     >((acc, tickerPrice) => {
       if (tickerPrice == null) return acc;
-      acc[tickerPrice.ticker] = tickerPrice.results[0].c;
+      const currPrice = tickerPrice.results[0].c;
+      acc[tickerPrice.ticker] = currPrice;
+      portfolioSum += currPrice;
       return acc;
     }, {});
 
@@ -248,6 +249,9 @@ class UserAccountManager extends BaseCommentHandler {
       });
     }
     embed.setFields(richEmbedFields);
+    embed.setFooter({
+      text: `Total portfolio value: ${formatAmountToReadable(portfolioSum)}`,
+    });
     await interaction.editReply({ embeds: [embed] });
   }
 }

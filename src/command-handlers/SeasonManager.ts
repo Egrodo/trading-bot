@@ -116,7 +116,7 @@ class Season extends BaseCommentHandler {
   private async fetchSeasonInfo(): Promise<void> {
     console.log('Fetching season info...');
     const allSeasons = await DatabaseManager.getAllSeasons();
-    if (allSeasons.length === 0) return;
+    if (!allSeasons?.length) return;
     this.seasons = allSeasons.reduce((acc, season) => {
       acc[season.name] = season;
       return acc;
