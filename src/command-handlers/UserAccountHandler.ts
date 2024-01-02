@@ -8,6 +8,7 @@ import SeasonManager from './SeasonManager';
 import PolygonApi from '../classes/PolygonApi';
 import { ITickerDetails } from '@polygon.io/client-js';
 import { formatAmountToReadable } from '../utils/helpers';
+import ErrorReporter from '../utils/ErrorReporter';
 
 /* Handles operations to user account information */
 class UserAccountManager extends BaseCommentHandler {
@@ -58,7 +59,7 @@ class UserAccountManager extends BaseCommentHandler {
 
       await DatabaseManager.registerAccount(
         user.id,
-        SeasonManager.activeSeason.startingBalance,
+        currentSeason.startingBalance,
         seasonName
       );
       interaction.reply({
@@ -68,6 +69,7 @@ class UserAccountManager extends BaseCommentHandler {
         ephemeral: true,
       });
     } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(`Failed to sign up user.`, err);
       interaction.reply({ content: strings.signupFailure, ephemeral: true });
       return;
     }
