@@ -52,7 +52,7 @@ export interface UserAccount {
   signupTs: number;
 }
 
-// Polygon result api TODO why not use polygon api types?
+// Type not exported from polygon lib for some reason
 export interface IAggsResults {
   T?: string;
   c?: number;

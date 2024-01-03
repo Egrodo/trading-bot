@@ -24,6 +24,7 @@ function getStrings(): StringsType {
   strings.errorBuyingStock = `Failed to buy stock. ${strings.reportedAlready}`;
   strings.errorSellingStock = `Failed to sell stock. ${strings.reportedAlready}`;
   strings.errorFetchingPrice = `Error fetching price data, might be rate-limited. Try again in a few minutes.`;
+  strings.errorCalculatingLeaderboard = `Error calculating leaderboard data. ${strings.reportedAlready}`;
   strings.errorAddingSeason = `There was an error adding your season. I've reported this error, please try again later.`;
   strings.leaderboardDescription = `Top 10 traders this season, by overall account value`;
   strings.invalidStartingBalance = `Starting balance must be an integer no smaller than 1 and no bigger than 100,000,000.`;
@@ -52,7 +53,7 @@ function getStrings(): StringsType {
     startDate: Date,
     endDate: Date
   ) =>
-    `Successfully added season ${seasonName} from ${startDate.toDateString()} to ${endDate.toDateString()}`;
+    `Successfully added season ${seasonName} from ${startDate.toDateString()} to ${endDate.toDateString()}. Recommend posting an announcement in the channel.`;
   richStrings.signupSuccess = (balance: number) =>
     `Congrats, you've signed up for this season and have a starting balance of ${formatAmountToReadable(
       balance

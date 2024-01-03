@@ -4,7 +4,7 @@ import { richStrings, strings } from '../static/strings';
 import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
-import SeasonManager from './SeasonManager';
+import GameAdminManager from './GameAdminHandler';
 import PolygonApi from '../classes/PolygonApi';
 import { ITickerDetails } from '@polygon.io/client-js';
 import { formatAmountToReadable } from '../utils/helpers';
@@ -32,7 +32,7 @@ class UserAccountManager extends BaseCommentHandler {
 
   private async handleSignupCommand(interaction: CommandInteraction) {
     const user = interaction.user;
-    const currentSeason = SeasonManager.activeSeason;
+    const currentSeason = GameAdminManager.activeSeason;
     if (!currentSeason) {
       interaction.reply({
         content: strings.signupFailureNoSeason,
@@ -64,7 +64,7 @@ class UserAccountManager extends BaseCommentHandler {
       );
       interaction.reply({
         content: richStrings.signupSuccess(
-          SeasonManager.activeSeason.startingBalance
+          GameAdminManager.activeSeason.startingBalance
         ),
         ephemeral: true,
       });
@@ -77,7 +77,7 @@ class UserAccountManager extends BaseCommentHandler {
 
   private async handleBalanceCommand(interaction: CommandInteraction) {
     const user = interaction.user;
-    const activeSeason = SeasonManager.activeSeason;
+    const activeSeason = GameAdminManager.activeSeason;
     if (!activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,
@@ -102,7 +102,7 @@ class UserAccountManager extends BaseCommentHandler {
 
   private async handlePortfolioCommand(interaction: CommandInteraction) {
     const user = interaction.user;
-    const activeSeason = SeasonManager.activeSeason;
+    const activeSeason = GameAdminManager.activeSeason;
     if (!activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,

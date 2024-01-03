@@ -1,6 +1,6 @@
 import { CommandListType, SeasonDocument } from '../types';
 import ENV from '../../env.json';
-import { CommandInteraction, EmbedBuilder } from 'discord.js';
+import { CommandInteraction, EmbedBuilder, User } from 'discord.js';
 import BaseCommentHandler from './BaseCommandHandler';
 import DatabaseManager from '../classes/DatabaseManager';
 import ErrorReporter from '../utils/ErrorReporter';
@@ -8,10 +8,12 @@ import { richStrings, strings } from '../static/strings';
 import PolygonApi from '../classes/PolygonApi';
 import { GuardClientExists, formatAmountToReadable } from '../utils/helpers';
 
+type LeaderboardDataType = { [accountId: string]: /* accountValue */ number };
+
 const MAX_USERS_TO_SHOW_ON_LEADERBOARD = 10;
+
 /**
- * Handles configuration of the current season that is in play. Will include commands
- * for admins to configure the length, starting balance, rules, etc, of the seasons.
+ * Handles configuration of game itself, including season and leaderboard data
  *
  * Admins can queue up a new season to start when the current season ends, and determine
  * what rewards (or punishments) are given to the winners of the season.
@@ -19,7 +21,7 @@ const MAX_USERS_TO_SHOW_ON_LEADERBOARD = 10;
  * This information needs to be stored in the database so it can persist, keyed on the
  * guild id.
  */
-class Season extends BaseCommentHandler {
+class GameAdmin extends BaseCommentHandler {
   public commands: CommandListType = {
     season: {
       description: 'Get or set trading game seasons',
@@ -178,30 +180,14 @@ class Season extends BaseCommentHandler {
     await this.fetchSeasonInfo();
   }
 
-  public async handleViewLeaderboardCommand(interaction: CommandInteraction) {
-    const seasonName = interaction.options.get('name')?.value as string;
-    const whichSeason = seasonName ?? this.activeSeason?.name;
-
-    if (whichSeason == null) {
-      interaction.reply({
-        content: strings.noActiveSeason,
-        ephemeral: true,
-      });
-      return;
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(richStrings.leaderboardTitle(whichSeason))
-      .setDescription(strings.leaderboardDescription)
-      .setColor('#663399')
-      .setTimestamp();
-
+  // Do work to fetch all user accounts and calculate + sort by account value
+  public async getLeaderboardDataForSeason(
+    seasonName: string,
+    limit = MAX_USERS_TO_SHOW_ON_LEADERBOARD
+  ): Promise<LeaderboardDataType> {
     const accountsForSeason = await DatabaseManager.getAccountsForSeason(
-      whichSeason
+      seasonName
     );
-
-    // Defer reply since this will take awhile...
-    await interaction.deferReply();
 
     // Get all tickers owned by all users
     const tickersToFetch = accountsForSeason.reduce<string[]>(
@@ -249,23 +235,69 @@ class Season extends BaseCommentHandler {
 
     const sortedAccountValues = accountValues.sort((a, b) => b[1] - a[1]);
 
-    const winners = sortedAccountValues.splice(
-      0,
-      MAX_USERS_TO_SHOW_ON_LEADERBOARD
-    );
+    const winners = sortedAccountValues.splice(0, limit);
 
-    // Also need to fetch each eligible account's username
-    const usernamePromises = winners.map(([accountId]) =>
+    return winners.reduce((acc, [accountId, accountValue]) => {
+      acc[accountId] = accountValue;
+      return acc;
+    }, {});
+  }
+
+  public async handleViewLeaderboardCommand(interaction: CommandInteraction) {
+    const seasonName = interaction.options.get('name')?.value as string;
+    const whichSeason = seasonName ?? this.activeSeason?.name;
+
+    if (whichSeason == null) {
+      interaction.reply({
+        content: strings.noActiveSeason,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const embed = new EmbedBuilder()
+      .setTitle(richStrings.leaderboardTitle(whichSeason))
+      .setDescription(strings.leaderboardDescription)
+      .setColor('#663399')
+      .setTimestamp();
+
+    // Defer reply since this will take awhile...
+    await interaction.deferReply();
+
+    let leaderboardData: LeaderboardDataType;
+    try {
+      leaderboardData = await this.getLeaderboardDataForSeason(whichSeason);
+    } catch (err) {
+      ErrorReporter.reportErrorInDebugChannel(
+        `Error fetching leaderboard data`,
+        err
+      );
+      interaction.editReply({
+        content: strings.errorCalculatingLeaderboard,
+      });
+      return;
+    }
+
+    // Fetch each eligible account's username in an id -> username map
+    const usernamePromises = Object.keys(leaderboardData).map((accountId) =>
       this._client.users.fetch(accountId)
     );
 
-    // Indexed by same as winners
     const usernames = await Promise.all(usernamePromises);
+
+    const accountIdToUsername = usernames.reduce((acc, user) => {
+      acc[user.id] = user;
+      return acc;
+    }, {});
 
     // Now that we have the account values, we can build the embed
     const fields = [];
-    winners.forEach(([accountId, accountValue], i) => {
-      const username = usernames[i].tag ?? accountId;
+    Object.entries(leaderboardData).forEach(([accountId, accountValue]) => {
+      console.log(usernames);
+      const username =
+        accountIdToUsername[accountId].globalName ??
+        accountIdToUsername[accountId].username ??
+        accountId;
       fields.push({
         name: username,
         value: formatAmountToReadable(accountValue),
@@ -377,4 +409,4 @@ class Season extends BaseCommentHandler {
   }
 }
 
-export default new Season();
+export default new GameAdmin();

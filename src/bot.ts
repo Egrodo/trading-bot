@@ -17,7 +17,7 @@ import ErrorReporter from './utils/ErrorReporter';
 import { formatSlashCommands } from './utils/slashCommandBuilder';
 import DatabaseManager from './classes/DatabaseManager';
 import UserAccountManager from './command-handlers/UserAccountHandler';
-import SeasonManager from './command-handlers/SeasonManager';
+import GameAdminManager from './command-handlers/GameAdminHandler';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const rest = new REST().setToken(ENV.token);
@@ -52,7 +52,7 @@ async function start() {
   BotStatusHandler.initWithGuild(client, guild);
   TradingHandler.init(client);
   UserAccountManager.init(client);
-  await SeasonManager.init(client);
+  await GameAdminManager.init(client);
 
   client.on(Events.InteractionCreate, CommandRouter);
   console.log('Trading bot successfully started!');
@@ -63,7 +63,7 @@ export async function registerCommands(): Promise<Array<unknown>> {
   const TradingCommands = formatSlashCommands(TradingHandler.commands);
   const BotStatusCommands = formatSlashCommands(BotStatusHandler.commands);
   const UserAccountCommands = formatSlashCommands(UserAccountManager.commands);
-  const SeasonManagerCommands = formatSlashCommands(SeasonManager.commands);
+  const GameAdminCommands = formatSlashCommands(GameAdminManager.commands);
   const data: any = await rest.put(
     Routes.applicationGuildCommands(ENV.applicationId, ENV.guildId),
     {
@@ -71,7 +71,7 @@ export async function registerCommands(): Promise<Array<unknown>> {
         ...TradingCommands,
         ...BotStatusCommands,
         ...UserAccountCommands,
-        ...SeasonManagerCommands,
+        ...GameAdminCommands,
       ],
     }
   );
@@ -86,7 +86,7 @@ function startJobs() {
     console.log(
       `Checking for season update. I will check again at ${seasonChangeJob.nextRun()}`
     );
-    SeasonManager.checkForSeasonChanges();
+    GameAdminManager.checkForSeasonChanges();
   });
 
   // TODO: IDEA: Daily leaderboard postings?
@@ -110,8 +110,8 @@ async function CommandRouter(interaction: ChatInputCommandInteraction) {
   if (UserAccountManager.commands.hasOwnProperty(commandName)) {
     return UserAccountManager.onMessage(interaction);
   }
-  if (SeasonManager.commands.hasOwnProperty(commandName)) {
-    return SeasonManager.onMessage(interaction);
+  if (GameAdminManager.commands.hasOwnProperty(commandName)) {
+    return GameAdminManager.onMessage(interaction);
   }
 }
 

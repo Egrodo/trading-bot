@@ -13,7 +13,7 @@ import { CommandListType, IAggsResults } from '../types';
 import { IAggsPreviousClose } from '@polygon.io/client-js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
-import SeasonManager from './SeasonManager';
+import GameAdminManager from './GameAdminHandler';
 import { richStrings, strings } from '../static/strings';
 import { formatAmountToReadable } from '../utils/helpers';
 import fsPromise from 'fs/promises';
@@ -112,15 +112,10 @@ class TradingCommandHandler extends BaseCommentHandler {
     ticker: string,
     interaction: CommandInteraction
   ): Promise<IAggsResults> {
-    const cachedPriceInfo = await DatabaseManager.getCachedPrice(ticker);
-    if (cachedPriceInfo) {
-      console.log(`Found cached price data for ${ticker}`);
-      return cachedPriceInfo;
-    }
     let quote: IAggsPreviousClose;
+
     try {
-      console.log(`Requesting price data for ${ticker}`);
-      quote = await PolygonApi.getPrevClosePriceData(ticker);
+      quote = await PolygonApi.cacheGetPrevClosePriceData(ticker);
     } catch (err) {
       interaction.reply({
         content: strings.errorFetchingPrice,
@@ -128,17 +123,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       return;
     }
-    if (quote.status !== 'OK') {
-      ErrorReporter.reportErrorInDebugChannel(
-        `Error fetching price data for ${ticker}`,
-        interaction
-      );
-      interaction.reply({
-        content: strings.errorFetchingPrice,
-        ephemeral: true,
-      });
-      return;
-    }
+
     if (quote.resultsCount === 0 || !quote.results?.length) {
       interaction.reply({
         content: strings.invalidStockTicker,
@@ -148,10 +133,6 @@ class TradingCommandHandler extends BaseCommentHandler {
     }
 
     const results = quote.results[0];
-
-    // If we got valid data, cache it
-    console.log(`Caching price data for ${ticker}`);
-    DatabaseManager.setCachedStockInfo(ticker, results);
 
     return results;
   }
@@ -293,7 +274,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   public async handleBuyCommand(interaction: CommandInteraction) {
-    if (!SeasonManager.activeSeason) {
+    if (!GameAdminManager.activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,
         ephemeral: true,
@@ -309,7 +290,7 @@ class TradingCommandHandler extends BaseCommentHandler {
     // Get user info to validate that they can afford this transaction
     const userAccount = await DatabaseManager.getAccount(
       interaction.user.id,
-      SeasonManager.activeSeason.name
+      GameAdminManager.activeSeason.name
     );
 
     if (!userAccount) {
@@ -350,7 +331,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       await DatabaseManager.buyStocks({
         userId: interaction.user.id,
         userAccount,
-        seasonName: SeasonManager.activeSeason.name,
+        seasonName: GameAdminManager.activeSeason.name,
         ticker,
         price: stockPrice,
         quantity,
@@ -397,7 +378,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   public async handleSellCommand(interaction: CommandInteraction) {
-    if (!SeasonManager.activeSeason) {
+    if (!GameAdminManager.activeSeason) {
       interaction.reply({
         content: strings.noActiveSeason,
         ephemeral: true,
@@ -413,7 +394,7 @@ class TradingCommandHandler extends BaseCommentHandler {
     // Get user info to validate that they own the stock they're trying to sell
     const userAccount = await DatabaseManager.getAccount(
       interaction.user.id,
-      SeasonManager.activeSeason.name
+      GameAdminManager.activeSeason.name
     );
 
     if (!userAccount) {
@@ -468,7 +449,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       await DatabaseManager.sellStocks({
         userId: interaction.user.id,
         userAccount,
-        seasonName: SeasonManager.activeSeason.name,
+        seasonName: GameAdminManager.activeSeason.name,
         ticker,
         price: stockPrice,
         quantity,
