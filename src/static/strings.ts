@@ -26,9 +26,11 @@ function getStrings(): StringsType {
   strings.errorFetchingPrice = `Error fetching price data, might be rate-limited. Try again in a few minutes.`;
   strings.errorCalculatingLeaderboard = `Error calculating leaderboard data. ${strings.reportedAlready}`;
   strings.errorAddingSeason = `There was an error adding your season. I've reported this error, please try again later.`;
-  strings.leaderboardDescription = `Top 10 traders this season, by overall account value`;
   strings.invalidStartingBalance = `Starting balance must be an integer no smaller than 1 and no bigger than 100,000,000.`;
   strings.noPermission = `You don't have permission do that`;
+  strings.dailyLeaderboardTitle = 'Daily Leaderboard';
+  strings.noLeaderboardData =
+    'No leaderboard data found, likely no registered users';
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${
@@ -81,12 +83,16 @@ function getStrings(): StringsType {
     `You don't own any shares of ${ticker}.`;
   richStrings.notEnoughStock = (ticker: string, quantity: number) =>
     `You don't have enough shares of ${ticker} to sell ${quantity}.`;
-  richStrings.tooSoonToSell = (ticker, lastTradeTimestamp) =>
+  richStrings.tooSoonToSell = (ticker) =>
     `You can't sell ${ticker} yet since you bought it within the last 24 hours. This is to prevent price arbitrage.`;
   richStrings.seasonNameMismatch = (name: string, activeName: string) =>
     `The season you're trying to end, ${name}, doesn't match the active season, ${activeName}.`;
-  richStrings.leaderboardTitle = (seasonName: string) =>
-    `Leaderboard for season "${seasonName}"`;
+  richStrings.leaderboardDescription = (n: number) =>
+    `Top ${n} traders this season, by current account value. As of ${new Date().toLocaleDateString(
+      'en-US',
+      { timeZone: 'EST' }
+    )}`;
+
   richStrings.portfolioShares = (quantity: number, unitPrice: number) =>
     `${quantity} ${
       quantity === 1 ? 'share' : 'shares'
@@ -95,6 +101,12 @@ function getStrings(): StringsType {
     )} each, worth ${formatAmountToReadable(quantity * unitPrice)}`;
   richStrings.wrongChannel = (channelId: string) =>
     `This command is only available in <#${channelId}>`;
+
+  richStrings.userPlacementMedal = (username: string, place: number) => {
+    const placeMedals = ['🥇', '🥈', '🥉'];
+    const placeMedal = place < 3 ? `${placeMedals[place]}` : `${place}:`;
+    return `${placeMedal} ${username}`;
+  };
 
   return { strings, richStrings };
 }

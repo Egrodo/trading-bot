@@ -1,13 +1,12 @@
 import { CommandListType, SeasonDocument } from '../types';
 import ENV from '../../env.json';
-import { CommandInteraction, EmbedBuilder, User } from 'discord.js';
+import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import BaseCommentHandler from './BaseCommandHandler';
 import DatabaseManager from '../classes/DatabaseManager';
 import ErrorReporter from '../utils/ErrorReporter';
 import { richStrings, strings } from '../static/strings';
 import PolygonApi from '../classes/PolygonApi';
 import { GuardClientExists, formatAmountToReadable } from '../utils/helpers';
-
 type LeaderboardDataType = { [accountId: string]: /* accountValue */ number };
 
 const MAX_USERS_TO_SHOW_ON_LEADERBOARD = 10;
@@ -189,6 +188,8 @@ class GameAdmin extends BaseCommentHandler {
       seasonName
     );
 
+    if (accountsForSeason.length === 0) return {};
+
     // Get all tickers owned by all users
     const tickersToFetch = accountsForSeason.reduce<string[]>(
       (acc, [_accountId, accountData]) => {
@@ -200,7 +201,7 @@ class GameAdmin extends BaseCommentHandler {
     const tickerPricePromises = tickersToFetch.map<Promise<[string, number]>>(
       async (ticker) => {
         try {
-          const priceData = await PolygonApi.getPrevClosePriceData(ticker);
+          const priceData = await PolygonApi.cacheGetPrevClosePriceData(ticker);
           return [ticker, priceData.results[0].c];
         } catch (_err) {
           // TODO: This shouldn't throw unless a stock is delisted or something...
@@ -243,43 +244,29 @@ class GameAdmin extends BaseCommentHandler {
     }, {});
   }
 
-  public async handleViewLeaderboardCommand(interaction: CommandInteraction) {
-    const seasonName = interaction.options.get('name')?.value as string;
+  public async createLeaderboardMsg(
+    seasonName?: string
+  ): Promise<EmbedBuilder | void> {
     const whichSeason = seasonName ?? this.activeSeason?.name;
+    console.log(whichSeason);
 
-    if (whichSeason == null) {
-      interaction.reply({
-        content: strings.noActiveSeason,
-        ephemeral: true,
-      });
-      return;
-    }
+    const leaderboardData = await this.getLeaderboardDataForSeason(whichSeason);
+    const leaderboardDataKeys = Object.keys(leaderboardData);
 
+    if (leaderboardDataKeys.length === 0) return Promise.resolve();
+
+    const n =
+      leaderboardDataKeys.length > MAX_USERS_TO_SHOW_ON_LEADERBOARD
+        ? MAX_USERS_TO_SHOW_ON_LEADERBOARD
+        : leaderboardDataKeys.length;
     const embed = new EmbedBuilder()
-      .setTitle(richStrings.leaderboardTitle(whichSeason))
-      .setDescription(strings.leaderboardDescription)
+      .setTitle(strings.dailyLeaderboardTitle)
+      .setDescription(richStrings.leaderboardDescription(n))
       .setColor('#663399')
       .setTimestamp();
 
-    // Defer reply since this will take awhile...
-    await interaction.deferReply();
-
-    let leaderboardData: LeaderboardDataType;
-    try {
-      leaderboardData = await this.getLeaderboardDataForSeason(whichSeason);
-    } catch (err) {
-      ErrorReporter.reportErrorInDebugChannel(
-        `Error fetching leaderboard data`,
-        err
-      );
-      interaction.editReply({
-        content: strings.errorCalculatingLeaderboard,
-      });
-      return;
-    }
-
     // Fetch each eligible account's username in an id -> username map
-    const usernamePromises = Object.keys(leaderboardData).map((accountId) =>
+    const usernamePromises = leaderboardDataKeys.map((accountId) =>
       this._client.users.fetch(accountId)
     );
 
@@ -292,14 +279,14 @@ class GameAdmin extends BaseCommentHandler {
 
     // Now that we have the account values, we can build the embed
     const fields = [];
-    Object.entries(leaderboardData).forEach(([accountId, accountValue]) => {
-      console.log(usernames);
+    Object.entries(leaderboardData).forEach(([accountId, accountValue], i) => {
       const username =
         accountIdToUsername[accountId].globalName ??
         accountIdToUsername[accountId].username ??
         accountId;
+
       fields.push({
-        name: username,
+        name: richStrings.userPlacementMedal(username, i),
         value: formatAmountToReadable(accountValue),
         inline: true,
       });
@@ -307,6 +294,20 @@ class GameAdmin extends BaseCommentHandler {
 
     embed.setFields(fields);
 
+    return embed;
+  }
+
+  public async handleViewLeaderboardCommand(interaction: CommandInteraction) {
+    const seasonName = interaction.options.get('name')?.value as string;
+    const whichSeason = seasonName ?? this.activeSeason?.name;
+
+    interaction.deferReply();
+    const embed = await this.createLeaderboardMsg(whichSeason);
+
+    if (!embed) {
+      interaction.editReply(strings.noLeaderboardData);
+      return;
+    }
     interaction.editReply({ embeds: [embed] });
   }
 

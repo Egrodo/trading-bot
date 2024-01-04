@@ -1,6 +1,7 @@
 import * as ENV from '../env.json';
 
 import {
+  ChannelType,
   ChatInputCommandInteraction,
   Client,
   Events,
@@ -19,7 +20,9 @@ import DatabaseManager from './classes/DatabaseManager';
 import UserAccountManager from './command-handlers/UserAccountHandler';
 import GameAdminManager from './command-handlers/GameAdminHandler';
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+});
 const rest = new REST().setToken(ENV.token);
 let guild = null;
 
@@ -42,9 +45,6 @@ async function start() {
     `Successfully registered ${data.length ?? 0} application (/) commands.`
   );
 
-  console.log('Starting jobs...');
-  startJobs();
-
   console.log('Connecting to database...');
   await DatabaseManager.init();
 
@@ -55,6 +55,9 @@ async function start() {
   await GameAdminManager.init(client);
 
   client.on(Events.InteractionCreate, CommandRouter);
+  console.log('Starting jobs...');
+  startJobs();
+
   console.log('Trading bot successfully started!');
 }
 
@@ -82,14 +85,49 @@ export async function registerCommands(): Promise<Array<unknown>> {
 /* Handles starting cron jobs for regular events */
 function startJobs() {
   // Check every day at midnight to see if the season has changed
-  const seasonChangeJob = Cron('0 0 0 * * *', () => {
-    console.log(
-      `Checking for season update. I will check again at ${seasonChangeJob.nextRun()}`
-    );
-    GameAdminManager.checkForSeasonChanges();
-  });
+  const seasonChangeJob = Cron(
+    '0 0 0 * * *',
+    () => {
+      console.log(
+        `Checking for season update. I will check again at ${seasonChangeJob.nextRun()}`
+      );
+      GameAdminManager.checkForSeasonChanges();
+    },
+    {
+      name: 'season-change-check',
+    }
+  );
 
-  // TODO: IDEA: Daily leaderboard postings?
+  // Every day at noon NYC time post the leaderboard
+  const leaderboardPost = Cron(
+    '0 12 * * *',
+    async () => {
+      console.log(
+        `Posting leaderboard. I will post again at ${leaderboardPost.nextRun()}`
+      );
+      const embed = await GameAdminManager.createLeaderboardMsg();
+      if (!embed) {
+        console.error('No leaderboard data to post.');
+        return;
+      }
+
+      try {
+        const channel = await client.channels.fetch(ENV.tradingChannelId);
+        if (channel.type == ChannelType.GuildText) {
+          await channel.send({ embeds: [embed] });
+        }
+      } catch (err) {
+        ErrorReporter.reportErrorInDebugChannel(
+          'Failed to fetch trading channel to post leaderboard into. Maybe I dont hvae permission?',
+          err
+        );
+      }
+    },
+    {
+      name: 'leaderboard-posting',
+      timezone: 'America/New_York',
+    }
+  );
 }
 
 async function CommandRouter(interaction: ChatInputCommandInteraction) {

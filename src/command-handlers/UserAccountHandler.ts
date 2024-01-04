@@ -212,7 +212,7 @@ class UserAccountManager extends BaseCommentHandler {
     const tickerPricePromises = holdingEntriesZeroesRemoved.map(
       async ([ticker]) => {
         try {
-          const priceData = await PolygonApi.getPrevClosePriceData(ticker);
+          const priceData = await PolygonApi.cacheGetPrevClosePriceData(ticker);
           return priceData;
         } catch (_err) {
           // Not all stocks have rich info, eat throw
