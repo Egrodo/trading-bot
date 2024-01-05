@@ -38,6 +38,8 @@ function getStrings(): StringsType {
   strings.tradeSummaryHighestCost = 'Highest cost';
   strings.tradeSummaryFirstTrade = 'First trade';
   strings.tradeSummaryLastTrade = 'Last trade';
+  strings.penniesBanned =
+    "Stocks with values less than $0.01 aren't supported at this time";
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${

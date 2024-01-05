@@ -291,6 +291,8 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       return;
     }
+
+    await interaction.deferReply({ ephemeral: true });
     const quantity = interaction.options.get('quantity')?.value as number;
 
     // Get user info to validate that they can afford this transaction
@@ -300,9 +302,8 @@ class TradingCommandHandler extends BaseCommentHandler {
     );
 
     if (!userAccount) {
-      interaction.reply({
+      interaction.editReply({
         content: strings.noAccount,
-        ephemeral: true,
       });
       return;
     }
@@ -313,19 +314,25 @@ class TradingCommandHandler extends BaseCommentHandler {
     }
     const { c: stockPrice } = priceInfo;
 
+    if (stockPrice < 0.01) {
+      interaction.editReply({
+        content: strings.penniesBanned,
+      });
+      return;
+    }
+
     const totalCost = Number((stockPrice * quantity).toFixed(2));
 
     const userBalance = userAccount.balance;
 
     if (totalCost > userBalance) {
-      interaction.reply({
+      interaction.editReply({
         content: richStrings.notEnoughMoneyForBuy(
           userBalance,
           quantity,
           ticker,
           totalCost
         ),
-        ephemeral: true,
       });
       return;
     }
@@ -365,19 +372,17 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       embed.setThumbnail(`attachment://${successIconAttachment.name}`);
 
-      await interaction.reply({
+      await interaction.followUp({
         embeds: [embed],
         files: [successIconAttachment],
       });
       // Follow up with ephemeral message telling user their new balance
-      await interaction.followUp({
+      await interaction.editReply({
         content: richStrings.checkNewBalance(newBalance),
-        ephemeral: true,
       });
     } catch (err) {
-      interaction.reply({
+      interaction.editReply({
         content: strings.errorBuyingStock,
-        ephemeral: true,
       });
       return;
     }
@@ -402,6 +407,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       return;
     }
+    interaction.deferReply({ ephemeral: true });
     const quantity = interaction.options.get('quantity')?.value as number;
 
     // Get user info to validate that they own the stock they're trying to sell
@@ -411,9 +417,8 @@ class TradingCommandHandler extends BaseCommentHandler {
     );
 
     if (!userAccount) {
-      interaction.reply({
+      interaction.editReply({
         content: strings.noAccount,
-        ephemeral: true,
       });
       return;
     }
@@ -421,17 +426,15 @@ class TradingCommandHandler extends BaseCommentHandler {
     const usersHoldings = userAccount.currentHoldings;
     const holdingsOfRequestedStock = usersHoldings[ticker];
     if (!holdingsOfRequestedStock || holdingsOfRequestedStock === 0) {
-      interaction.reply({
+      interaction.editReply({
         content: richStrings.dontOwnStock(ticker),
-        ephemeral: true,
       });
       return;
     }
 
     if (holdingsOfRequestedStock < quantity) {
-      interaction.reply({
+      interaction.editReply({
         content: richStrings.notEnoughStock(ticker, quantity),
-        ephemeral: true,
       });
       return;
     }
@@ -441,9 +444,8 @@ class TradingCommandHandler extends BaseCommentHandler {
       (trade) => trade.ticker === ticker
     );
     if (lastTradeOfStock.timestamp > Date.now() - 24 * 60 * 60 * 1000) {
-      interaction.reply({
+      interaction.editReply({
         content: richStrings.tooSoonToSell(ticker, lastTradeOfStock.timestamp),
-        ephemeral: true,
       });
       return;
     }
@@ -492,20 +494,18 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       embed.setThumbnail(`attachment://${successIconAttachment.name}`);
 
-      await interaction.reply({
+      await interaction.followUp({
         embeds: [embed],
         files: [successIconAttachment],
       });
 
       // Follow up with ephemeral message telling user their new balance
-      await interaction.followUp({
+      await interaction.editReply({
         content: richStrings.checkNewBalance(newBalance),
-        ephemeral: true,
       });
     } catch (err) {
-      interaction.reply({
+      interaction.editReply({
         content: strings.errorSellingStock,
-        ephemeral: true,
       });
       return;
     }
