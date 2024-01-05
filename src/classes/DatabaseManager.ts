@@ -29,7 +29,7 @@ const MAX_CONNECTION_ATTEMPTS = 5;
  * Season data:
  *   - Stored using Redis JSON type
  *   - Key breakdown: `season:${seasonName}`
- *   - Contains the season name, start/end dates, and any other metadata (todo) about seasons
+ *   - Contains the season name, start/end dates, and any other metadata about seasons
  */
 
 class DatabaseManager {

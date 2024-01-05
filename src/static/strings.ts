@@ -1,3 +1,4 @@
+import { PastTrade, TradeType } from '../types';
 import { formatAmountToReadable } from '../utils/helpers';
 /* eslint quotes: ["error", "backtick"] */
 
@@ -31,6 +32,12 @@ function getStrings(): StringsType {
   strings.dailyLeaderboardTitle = 'Daily Leaderboard';
   strings.noLeaderboardData =
     'No leaderboard data found, likely no registered users';
+  strings.tradeSummaryTotalSpend = 'Total Spend';
+  strings.tradeSummaryCostBasis = 'Cost basis';
+  strings.tradeSummaryLowestCost = 'Lowest cost';
+  strings.tradeSummaryHighestCost = 'Highest cost';
+  strings.tradeSummaryFirstTrade = 'First trade';
+  strings.tradeSummaryLastTrade = 'Last trade';
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${
@@ -107,6 +114,19 @@ function getStrings(): StringsType {
     const placeMedal = place < 3 ? `${placeMedals[place]}` : `${place}:`;
     return `${placeMedal} ${username}`;
   };
+
+  richStrings.tradeSummaryTitle = (ticker: string) =>
+    `Your trade summary for ${ticker}`;
+  richStrings.tradeSummaryDesc = (tradeCount: number) =>
+    `You've traded this stock ${tradeCount} ${
+      tradeCount === 1 ? 'time' : 'times'
+    } in total`;
+  richStrings.tradeSummaryTimeStr = (type: TradeType, trade: PastTrade) =>
+    `${type === TradeType.BUY ? 'Bought' : 'Sold'} ${
+      trade.quantity
+    } for ${formatAmountToReadable(trade.price)} on ${new Date(
+      trade.timestamp
+    ).toLocaleDateString()}`;
 
   return { strings, richStrings };
 }

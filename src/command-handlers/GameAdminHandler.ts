@@ -204,7 +204,7 @@ class GameAdmin extends BaseCommentHandler {
           const priceData = await PolygonApi.cacheGetPrevClosePriceData(ticker);
           return [ticker, priceData.results[0].c];
         } catch (_err) {
-          // TODO: This shouldn't throw unless a stock is delisted or something...
+          // This shouldn't throw unless a stock is delisted or something...
           ErrorReporter.reportErrorInDebugChannel(
             `Error fetching ticker price`,
             ticker,
@@ -244,6 +244,7 @@ class GameAdmin extends BaseCommentHandler {
     }, {});
   }
 
+  // TODO: Make this support pagination?
   public async createLeaderboardMsg(
     seasonName?: string
   ): Promise<EmbedBuilder | void> {
@@ -260,6 +261,10 @@ class GameAdmin extends BaseCommentHandler {
         ? MAX_USERS_TO_SHOW_ON_LEADERBOARD
         : leaderboardDataKeys.length;
     const embed = new EmbedBuilder()
+      .setAuthor({
+        name: ENV.botName,
+        iconURL: ENV.botIconUrl,
+      })
       .setTitle(strings.dailyLeaderboardTitle)
       .setDescription(richStrings.leaderboardDescription(n))
       .setColor('#663399')

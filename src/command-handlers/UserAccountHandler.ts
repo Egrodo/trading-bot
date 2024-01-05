@@ -7,7 +7,7 @@ import BaseCommentHandler from './BaseCommandHandler';
 import GameAdminManager from './GameAdminHandler';
 import PolygonApi from '../classes/PolygonApi';
 import { ITickerDetails } from '@polygon.io/client-js';
-import { formatAmountToReadable } from '../utils/helpers';
+import { formatAmountToReadable, isValidStockTicker } from '../utils/helpers';
 import ErrorReporter from '../utils/ErrorReporter';
 
 /* Handles operations to user account information */
@@ -28,6 +28,20 @@ class UserAccountManager extends BaseCommentHandler {
       allowedChannel: ENV.tradingChannelId,
       handler: this.handlePortfolioCommand.bind(this),
     },
+    asset: {
+      description: 'View your trading history for a specific stock',
+      allowedChannel: ENV.tradingChannelId,
+      handler: this.handleAssetCommand.bind(this),
+      options: [
+        {
+          name: 'ticker',
+          description: 'The ticker you want to view info for',
+          type: 'string',
+          required: true,
+        },
+      ],
+    },
+    // TODO: Trade history command? Prob should figure out pagination first.
   };
 
   private async handleSignupCommand(interaction: CommandInteraction) {
@@ -136,6 +150,10 @@ class UserAccountManager extends BaseCommentHandler {
 
     const embed = new EmbedBuilder()
       .setTitle(`Portfolio for ${user.username}`)
+      .setAuthor({
+        name: ENV.botName,
+        iconURL: ENV.botIconUrl,
+      })
       .setDescription(
         `Your current holdings for ${activeSeason.name} are as follows:`
       )
@@ -255,6 +273,130 @@ class UserAccountManager extends BaseCommentHandler {
       text: `Total portfolio value: ${formatAmountToReadable(portfolioSum)}`,
     });
     await interaction.editReply({ embeds: [embed] });
+  }
+
+  /* Provide user with insights on their trade history with any one specific stock */
+  private async handleAssetCommand(interaction: CommandInteraction) {
+    // Validate that the user actually sent a ticker
+    const ticker = (
+      interaction.options.get('ticker')?.value as string
+    )?.toUpperCase();
+    if (!ticker) {
+      interaction.reply({
+        content: strings.invalidStockTicker,
+        ephemeral: true,
+      });
+      ErrorReporter.reportErrorInDebugChannel(
+        'Price command received with no ticker',
+        interaction
+      );
+      return;
+    }
+
+    if (!isValidStockTicker(ticker)) {
+      interaction.reply({
+        content: strings.invalidStockTicker,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Get relevant user information
+    const user = interaction.user;
+    const activeSeason = GameAdminManager.activeSeason;
+    if (!activeSeason) {
+      interaction.reply({
+        content: strings.noActiveSeason,
+        ephemeral: true,
+      });
+      return;
+    }
+    const account = await DatabaseManager.getAccount(
+      user.id,
+      activeSeason.name
+    );
+    if (!account) {
+      interaction.reply({ content: strings.noAccount, ephemeral: true });
+      return;
+    }
+
+    // Get all trade history for a specific ticker
+    const relevantTradeHistory = account.tradeHistory.filter(
+      (pastTrade) => pastTrade.ticker === ticker
+    );
+    const tradeCount = relevantTradeHistory.length;
+
+    // Calculate cost-basis
+    const totalSpend = relevantTradeHistory.reduce(
+      (acc, pastTrade) => acc + pastTrade.price * pastTrade.quantity,
+      0
+    );
+    // For purpose of calculating averageCost, i need to get the total stocks traded not the tradeCount
+    const totalTraded = relevantTradeHistory.reduce(
+      (acc, pastTrade) => acc + pastTrade.quantity,
+      0
+    );
+    const averageCost = totalSpend / totalTraded;
+
+    // Find lowest and highest price the user bought at
+    const [lowestCost, highestCost] = relevantTradeHistory.reduce(
+      (acc, pastTrade) => {
+        let [prevLowest, prevHighest] = acc;
+        if (pastTrade.price < prevLowest) prevLowest = pastTrade.price;
+        if (pastTrade.price > prevHighest) prevHighest = pastTrade.price;
+        return [prevLowest, prevHighest];
+      },
+      [Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER]
+    );
+
+    const firstTrade = relevantTradeHistory[0];
+    const lastTrade = relevantTradeHistory[tradeCount - 1];
+
+    // Compose the msg
+    const embed = new EmbedBuilder()
+      .setColor('#123abc') // TODO:
+      .setTitle(richStrings.tradeSummaryTitle(ticker))
+      .setAuthor({
+        name: ENV.botName,
+        iconURL: ENV.botIconUrl,
+      })
+      .setDescription(richStrings.tradeSummaryDesc(tradeCount))
+      .setTimestamp();
+
+    const fields = [
+      {
+        name: strings.tradeSummaryTotalSpend,
+        value: formatAmountToReadable(totalSpend),
+        inline: true,
+      },
+      {
+        name: strings.tradeSummaryCostBasis,
+        value: formatAmountToReadable(averageCost),
+        inline: true,
+      },
+      {
+        name: strings.tradeSummaryLowestCost,
+        value: formatAmountToReadable(lowestCost),
+        inline: true,
+      },
+      {
+        name: strings.tradeSummaryHighestCost,
+        value: formatAmountToReadable(highestCost),
+        inline: true,
+      },
+      {
+        name: strings.tradeSummaryFirstTrade,
+        value: richStrings.tradeSummaryTimeStr(firstTrade.type, firstTrade),
+        inline: true,
+      },
+      {
+        name: strings.tradeSummaryLastTrade,
+        value: richStrings.tradeSummaryTimeStr(lastTrade.type, lastTrade),
+        inline: true,
+      },
+    ];
+    embed.setFields(fields);
+    interaction.reply({ embeds: [embed], ephemeral: false });
   }
 }
 

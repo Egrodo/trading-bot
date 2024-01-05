@@ -70,6 +70,11 @@ export function formatAmountToReadable(balance: number): string {
   })}`;
 }
 
+export function isValidStockTicker(ticker: string): boolean {
+  const validTickerRegex = new RegExp(/^[A-z]{1,5}$/g);
+  return ticker && validTickerRegex.test(ticker);
+}
+
 // export default {
 //   // User specific debouncer. NOTE: Potential memory leak here if runs too long without clearing userMap.
 //   rateLimiter: (delay: number, fn: Function): (msg: Message) => void => {

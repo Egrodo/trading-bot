@@ -25,7 +25,7 @@ class BaseCommentHandler {
     const localCommand = this.commands[interaction.commandName];
 
     if (localCommand.allowDm === true) {
-      // TODO: Many assumptions might not hold true in DM world..
+      // TODO: Do I even want to support this?
       throw new Error('Not Implemented yet');
     }
 

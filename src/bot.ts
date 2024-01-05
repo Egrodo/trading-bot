@@ -130,6 +130,7 @@ function startJobs() {
   );
 }
 
+// IDEA: Track stats on how users interact with the bot; most used commands, stocks, etc, for end of season report
 async function CommandRouter(interaction: ChatInputCommandInteraction) {
   if (interaction.type !== InteractionType.ApplicationCommand) {
     console.error('Invalid interaction type');

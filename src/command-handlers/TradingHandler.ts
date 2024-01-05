@@ -15,7 +15,7 @@ import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 import GameAdminManager from './GameAdminHandler';
 import { richStrings, strings } from '../static/strings';
-import { formatAmountToReadable } from '../utils/helpers';
+import { formatAmountToReadable, isValidStockTicker } from '../utils/helpers';
 import fsPromise from 'fs/promises';
 import path from 'path';
 
@@ -156,8 +156,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
-    const validRegex = new RegExp(/^[A-z]{1,5}$/g);
-    if (!validRegex.test(ticker)) {
+    if (!isValidStockTicker(ticker)) {
       interaction.reply({
         content: strings.invalidStockTicker,
         ephemeral: true,
@@ -284,7 +283,14 @@ class TradingCommandHandler extends BaseCommentHandler {
 
     const ticker = (
       interaction.options.get('ticker')?.value as string
-    ).toUpperCase();
+    )?.toUpperCase();
+    if (!isValidStockTicker(ticker)) {
+      interaction.reply({
+        content: strings.invalidStockTicker,
+        ephemeral: true,
+      });
+      return;
+    }
     const quantity = interaction.options.get('quantity')?.value as number;
 
     // Get user info to validate that they can afford this transaction
@@ -388,7 +394,14 @@ class TradingCommandHandler extends BaseCommentHandler {
 
     const ticker = (
       interaction.options.get('ticker')?.value as string
-    ).toUpperCase();
+    )?.toUpperCase();
+    if (!isValidStockTicker(ticker)) {
+      interaction.reply({
+        content: strings.invalidStockTicker,
+        ephemeral: true,
+      });
+      return;
+    }
     const quantity = interaction.options.get('quantity')?.value as number;
 
     // Get user info to validate that they own the stock they're trying to sell

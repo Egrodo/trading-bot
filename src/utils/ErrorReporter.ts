@@ -45,6 +45,10 @@ class ErrorReporter {
     console.error(errorInformation);
 
     const errorMsg = new EmbedBuilder()
+      .setAuthor({
+        name: ENV.botName,
+        iconURL: ENV.botIconUrl,
+      })
       .setColor('#ff0000')
       .setTitle('Trading Bot Error Report')
       .setDescription(msg);
