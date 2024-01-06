@@ -241,13 +241,20 @@ class UserAccountManager extends BaseCommentHandler {
     let portfolioSum = 0;
     const tickerPrices = (await Promise.all(tickerPricePromises)).reduce<
       Record<string, number>
-    >((acc, tickerPrice) => {
+    >((acc, tickerPrice, i) => {
       if (tickerPrice == null) return acc;
       const currPrice = tickerPrice.results[0].c;
+      // Order is reserved throughout all these operations so can find
+      // quantity using index
+      const totalCost = currPrice * holdingEntriesZeroesRemoved[i][1];
+      portfolioSum += totalCost;
+
       acc[tickerPrice.ticker] = currPrice;
-      portfolioSum += currPrice;
       return acc;
     }, {});
+
+    // Add users free cash to sum
+    portfolioSum += account.balance;
 
     // Now edit the fields
     const richEmbedFields = [];
@@ -268,6 +275,13 @@ class UserAccountManager extends BaseCommentHandler {
         inline: true,
       });
     }
+
+    // Now add the users free cash balance
+    richEmbedFields.push({
+      name: 'Cash',
+      value: formatAmountToReadable(account.balance),
+      inline: true,
+    });
     embed.setFields(richEmbedFields);
     embed.setFooter({
       text: `Total portfolio value: ${formatAmountToReadable(portfolioSum)}`,
@@ -324,6 +338,10 @@ class UserAccountManager extends BaseCommentHandler {
     const relevantTradeHistory = account.tradeHistory.filter(
       (pastTrade) => pastTrade.ticker === ticker
     );
+    if (relevantTradeHistory.length === 0) {
+      interaction.reply({ content: strings.noAssetOwned, ephemeral: true });
+      return;
+    }
     const tradeCount = relevantTradeHistory.length;
 
     // Calculate cost-basis

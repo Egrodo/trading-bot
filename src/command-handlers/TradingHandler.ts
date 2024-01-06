@@ -236,7 +236,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       }
     } catch (err) {
       // Mute this error because it's not really an issue.
-      if (err.message !== 'Ticker not found.') {
+      if (err.code !== 404) {
         ErrorReporter.reportErrorInDebugChannel(
           `Error fetching company info for ${ticker}`,
           err

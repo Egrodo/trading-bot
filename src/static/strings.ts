@@ -40,6 +40,7 @@ function getStrings(): StringsType {
   strings.tradeSummaryLastTrade = 'Last trade';
   strings.penniesBanned =
     "Stocks with values less than $0.01 aren't supported at this time";
+  strings.noAssetOwned = "You don't own this asset";
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${

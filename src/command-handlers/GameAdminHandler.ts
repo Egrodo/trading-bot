@@ -306,7 +306,7 @@ class GameAdmin extends BaseCommentHandler {
     const seasonName = interaction.options.get('name')?.value as string;
     const whichSeason = seasonName ?? this.activeSeason?.name;
 
-    interaction.deferReply();
+    await interaction.deferReply();
     const embed = await this.createLeaderboardMsg(whichSeason);
 
     if (!embed) {
