@@ -10,6 +10,8 @@ import { ITickerDetails } from '@polygon.io/client-js';
 import { formatAmountToReadable, isValidStockTicker } from '../utils/helpers';
 import ErrorReporter from '../utils/ErrorReporter';
 
+const MAX_STOCKS_SHOWN_IN_PORTFOLIO = 25;
+
 /* Handles operations to user account information */
 class UserAccountManager extends BaseCommentHandler {
   public commands: CommandListType = {
@@ -142,27 +144,25 @@ class UserAccountManager extends BaseCommentHandler {
 
     if (holdingEntriesZeroesRemoved.length === 0) {
       interaction.reply({
-        content: `You don't have any stocks in your portfolio! Buy some with /buy`,
+        content: strings.portfolioNoStocks,
         ephemeral: true,
       });
       return;
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(`Portfolio for ${user.username}`)
+      .setTitle(richStrings.portfolioTitle(user.username))
       .setAuthor({
         name: ENV.botName,
         iconURL: ENV.botIconUrl,
       })
-      .setDescription(
-        `Your current holdings for ${activeSeason.name} are as follows:`
-      )
+      .setDescription(richStrings.portfolioDesc(activeSeason.name))
       .setColor('#663399');
 
     // Do the first up to 25 holdings
     const firstLoopLength =
-      holdingEntriesZeroesRemoved.length > 25
-        ? 25
+      holdingEntriesZeroesRemoved.length > MAX_STOCKS_SHOWN_IN_PORTFOLIO
+        ? MAX_STOCKS_SHOWN_IN_PORTFOLIO
         : holdingEntriesZeroesRemoved.length;
     const embedFields = [];
     for (let i = 0; i < firstLoopLength; ++i) {
@@ -176,40 +176,23 @@ class UserAccountManager extends BaseCommentHandler {
 
     // Now add the users free cash balance
     embedFields.push({
-      name: 'Cash',
+      name: strings.cash,
       value: formatAmountToReadable(account.balance),
       inline: true,
     });
 
+    // TODO: Build pagination to support viewing more than 25 holdings
+    if (holdingEntriesZeroesRemoved.length > firstLoopLength) {
+      embedFields.push({
+        name: richStrings.portfolioOverflow(
+          holdingEntriesZeroesRemoved.length - firstLoopLength
+        ),
+        value: strings.portfolioOverflow,
+        inline: true,
+      });
+    }
+
     embed.setFields(embedFields);
-    // If there are more than 25 holdings we need an additional embed as a single
-    // only supports up to 25 table items.
-    // TODO: Find a better way to display extraneous holdings
-    // if (holdingEntriesZeroesRemoved.length > 25) {
-    //   for (let i = 25; i < holdingEntriesZeroesRemoved.length; i += 25) {
-    //     const embed = new EmbedBuilder()
-    //       .setDescription(
-    //         'a continued display of your stock holdings are below:'
-    //       )
-    //       .setColor('#663399')
-    //       .setTimestamp();
-    //     const fields = [];
-    //     const loopLength =
-    //       i + 25 > holdingEntriesZeroesRemoved.length
-    //         ? holdingEntriesZeroesRemoved.length
-    //         : i + 25;
-    //     for (let j = i; j < loopLength; ++j) {
-    //       const [ticker, quantity] = holdingEntriesZeroesRemoved[j];
-    //       fields.push({
-    //         name: ticker,
-    //         value: quantity.toLocaleString(),
-    //         inline: true,
-    //       });
-    //     }
-    //     embed.addFields(fields);
-    //     allEmbeds.push(embed);
-    //   }
-    // }
 
     embed.setTimestamp();
 
@@ -277,7 +260,7 @@ class UserAccountManager extends BaseCommentHandler {
         ? richStrings.portfolioShares(quantity, tickerPrices[ticker])
         : quantity.toLocaleString();
       richEmbedFields.push({
-        name: stockName ?? ticker,
+        name: stockName ? `${stockName} (${ticker})` : ticker,
         value: priceString,
         inline: true,
       });
@@ -285,13 +268,24 @@ class UserAccountManager extends BaseCommentHandler {
 
     // Now add the users free cash balance
     richEmbedFields.push({
-      name: 'Cash',
+      name: strings.cash,
       value: formatAmountToReadable(account.balance),
       inline: true,
     });
+
+    if (holdingEntriesZeroesRemoved.length > firstLoopLength) {
+      richEmbedFields.push({
+        name: richStrings.portfolioOverflow(
+          holdingEntriesZeroesRemoved.length - firstLoopLength
+        ),
+        value: strings.portfolioOverflow,
+        inline: true,
+      });
+    }
+
     embed.setFields(richEmbedFields);
     embed.setFooter({
-      text: `Total portfolio value: ${formatAmountToReadable(portfolioSum)}`,
+      text: richStrings.portfolioTotalValue(portfolioSum),
     });
     await interaction.editReply({ embeds: [embed] });
   }

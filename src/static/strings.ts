@@ -41,6 +41,9 @@ function getStrings(): StringsType {
   strings.penniesBanned =
     "Stocks with values less than $0.01 aren't supported at this time";
   strings.noAssetOwned = "You don't own this asset";
+  strings.portfolioOverflow = 'You own more stocks than can be shown here';
+  strings.cash = 'Cash';
+  strings.portfolioNoStocks = `You don't have any stocks in your portfolio! Buy some with /buy`;
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${
@@ -130,6 +133,12 @@ function getStrings(): StringsType {
     } for ${formatAmountToReadable(trade.price)} on ${new Date(
       trade.timestamp
     ).toLocaleDateString()}`;
+  richStrings.portfolioTitle = (username: string) => `${username}'s Portfolio`;
+  richStrings.portfolioDesc = (seasonName: string) =>
+    `Your current holdings for ${seasonName} are as follows`;
+  richStrings.portfolioOverflow = (n: number) => `And ${n} more...`;
+  richStrings.portfolioTotalValue = (totalValue: number) =>
+    `Total value: ${formatAmountToReadable(totalValue)}`;
 
   return { strings, richStrings };
 }
