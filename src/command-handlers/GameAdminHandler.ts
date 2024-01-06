@@ -98,6 +98,7 @@ class GameAdmin extends BaseCommentHandler {
         },
       },
     },
+    // TODO: Allow admins to view portfolios of other users
   };
 
   public seasons: { [seasonName: string]: SeasonDocument } = {};
@@ -233,6 +234,11 @@ class GameAdmin extends BaseCommentHandler {
         return [accountId, totalValue];
       }
     );
+
+    // Include cash balance in account value calculation
+    accountValues.forEach((_, i) => {
+      accountValues[i][1] += accountsForSeason[i][1].balance;
+    });
 
     const sortedAccountValues = accountValues.sort((a, b) => b[1] - a[1]);
 

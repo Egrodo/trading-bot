@@ -174,6 +174,13 @@ class UserAccountManager extends BaseCommentHandler {
       });
     }
 
+    // Now add the users free cash balance
+    embedFields.push({
+      name: 'Cash',
+      value: formatAmountToReadable(account.balance),
+      inline: true,
+    });
+
     embed.setFields(embedFields);
     // If there are more than 25 holdings we need an additional embed as a single
     // only supports up to 25 table items.
