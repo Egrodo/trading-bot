@@ -236,7 +236,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       }
     } catch (err) {
       // Mute this error because it's not really an issue.
-      if (err.code !== 404) {
+      if (err?.code !== 404) {
         ErrorReporter.reportErrorInDebugChannel(
           `Error fetching company info for ${ticker}`,
           err
@@ -407,7 +407,7 @@ class TradingCommandHandler extends BaseCommentHandler {
       });
       return;
     }
-    interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ ephemeral: true });
     const quantity = interaction.options.get('quantity')?.value as number;
 
     // Get user info to validate that they own the stock they're trying to sell
