@@ -29,6 +29,8 @@ function getStrings(): StringsType {
   strings.errorAddingSeason = `There was an error adding your season. I've reported this error, please try again later.`;
   strings.invalidStartingBalance = `Starting balance must be an integer no smaller than 1 and no bigger than 100,000,000.`;
   strings.noPermission = `You don't have permission do that`;
+  strings.noTraderRole = `Only verified users are allowed to trade at this time`;
+
   strings.dailyLeaderboardTitle = 'Daily Leaderboard';
   strings.noLeaderboardData =
     'No leaderboard data found, likely no registered users';

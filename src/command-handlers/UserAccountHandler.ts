@@ -415,7 +415,7 @@ class UserAccountManager extends BaseCommentHandler {
       },
     ];
     embed.setFields(fields);
-    interaction.reply({ embeds: [embed], ephemeral: false });
+    interaction.reply({ embeds: [embed], ephemeral: true });
   }
 }
 

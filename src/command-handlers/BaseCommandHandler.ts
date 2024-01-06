@@ -1,13 +1,9 @@
-import {
-  ChannelType,
-  ChatInputCommandInteraction,
-  Client,
-  GuildMember,
-} from 'discord.js';
+import { ChatInputCommandInteraction, Client, GuildMember } from 'discord.js';
 import { CommandListType, CommandWithSubCommandsType } from '../types';
 import { GuardClientExists } from '../utils/helpers';
 import { richStrings, strings } from '../static/strings';
 import { PermissionFlagsBits } from 'discord.js';
+import * as ENV from '../../env.json';
 
 class BaseCommentHandler {
   public commands: CommandListType = {};
@@ -41,6 +37,19 @@ class BaseCommentHandler {
         });
         return;
       }
+    }
+
+    // For all other commands, ensure that the user has the trader role
+    const hasTraderRole = (interaction.member as GuildMember).roles.cache.has(
+      ENV.traderRoleId
+    );
+
+    if (!hasTraderRole) {
+      interaction.reply({
+        content: strings.noTraderRole,
+        ephemeral: true,
+      });
+      return;
     }
 
     // Ensure that the command is only used in the proper channel.
