@@ -46,15 +46,18 @@ export async function leaderboardJob(
   const accountsForSeason = await DatabaseManager.getAccountsForSeason(
     currentSeason
   );
-  const tickers = await GameAdminHandler.getAllTickersForAccounts(
-    accountsForSeason
+  const tickersNeeded = (
+    await GameAdminHandler.getAllTickersForAccounts(accountsForSeason)
+  )?.filter((ticker) => !DatabaseManager.tickerCache.has(ticker));
+
+  const tickerChunks = chunkArray<string>(
+    tickersNeeded,
+    PRICE_CHUNKED_REQUEST_SIZE
   );
 
-  // In order to avoid rate-limits, we can only fetch a few tickers per minute,
-  // every minute, until we have all the data we need.
-  const tickerChunks = chunkArray<string>(tickers, PRICE_CHUNKED_REQUEST_SIZE);
-
   console.log(`Slowly requesting ${tickerChunks.length} chunks of tickers`);
+
+  if (!tickerChunks.length) return;
 
   const priceCashInterval = global.setInterval(async () => {
     const tickersToRequest = tickerChunks.shift();
@@ -64,10 +67,10 @@ export async function leaderboardJob(
       return;
     }
 
-    console.log(`DEV: Requesting ${tickersToRequest.join(', ')}`);
+    console.log(`Requesting ${tickersToRequest.join(', ')} to pre-cache`);
 
     tickersToRequest.forEach((ticker) =>
-      PolygonApi.cacheGetPrevClosePriceData(ticker)
+      PolygonApi.getPrevClosePriceData(ticker)
     );
   }, LEADERBOARD_POST_INTERVAL);
 }

@@ -112,10 +112,10 @@ class TradingCommandHandler extends BaseCommentHandler {
     ticker: string,
     interaction: CommandInteraction
   ): Promise<IAggsResults> {
-    let quote: IAggsPreviousClose;
+    let results: IAggsResults;
 
     try {
-      quote = await PolygonApi.cacheGetPrevClosePriceData(ticker);
+      results = await PolygonApi.getPrevClosePriceData(ticker);
     } catch (err) {
       interaction.reply({
         content: strings.errorFetchingPrice,
@@ -124,15 +124,13 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
-    if (quote.resultsCount === 0 || !quote.results?.length) {
+    if (!results) {
       interaction.reply({
         content: strings.invalidStockTicker,
         ephemeral: true,
       });
       return;
     }
-
-    const results = quote.results[0];
 
     return results;
   }

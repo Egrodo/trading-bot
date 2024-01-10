@@ -40,16 +40,29 @@ export function startJobs(client: Client) {
   );
 
   // Every day at noon NYC time post the leaderboard
-  const postLeaderboard = cronWrapper(
-    '0 12 * * *',
+  const marketOpenLeaderboardPost = cronWrapper(
+    '30 9 * * 1',
     leaderboardJob,
     client,
-    'Leaderboard Posting'
+    'Market Open Leaderboard Posting'
   );
 
+  // NOTE: This isn't really market close because our data is from the previous day but...
+  const marketCloseLeaderboardPost = cronWrapper(
+    '30 16 * * 5',
+    leaderboardJob,
+    client,
+    'Market Closing Leaderboard Posting'
+  );
+
+  // TODO: DEBUG: DEV: Remove this
   leaderboardJob(client);
 
-  const jobs = [seasonChangeJob, postLeaderboard];
+  const jobs = [
+    seasonChangeJob,
+    marketOpenLeaderboardPost,
+    marketCloseLeaderboardPost,
+  ];
 
   return jobs;
 }

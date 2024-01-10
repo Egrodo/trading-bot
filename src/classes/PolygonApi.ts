@@ -5,6 +5,7 @@ import {
   restClient,
 } from '@polygon.io/client-js';
 import DatabaseManager from './DatabaseManager';
+import { IAggsResults } from '../types';
 
 const MAX_PRICE_CACHE_SIZE = 100;
 const MAX_TICKER_INFO_CACHE_SIZE = 100;
@@ -23,65 +24,35 @@ const MAX_TICKER_INFO_CACHE_SIZE = 100;
 class PolygonApi {
   _restClient = restClient(ENV.polygonKey);
 
-  /**
-   * Stock price information changes once a day (currently) so cache it
-   * keyed with the current date and tickder in a quick LRU
-   */
-  _prevClosePriceCache: Map<string, IAggsPreviousClose> = new Map();
-  /* Get price information from the last market day's close */
-  public async getPrevClosePriceData(
-    ticker: string
-  ): Promise<IAggsPreviousClose> {
+  /* Get price information from the last market day's close. Either from cache or API */
+  public async getPrevClosePriceData(ticker: string): Promise<IAggsResults> {
     const tickerKey = `${ticker}:${new Date().toDateString()}`;
-    if (this._prevClosePriceCache.has(tickerKey)) {
-      return this._prevClosePriceCache.get(tickerKey);
+    if (DatabaseManager.tickerCache.has(tickerKey)) {
+      return DatabaseManager.tickerCache.get(tickerKey);
     }
+
     const prevClosePriceData = await this._restClient.stocks.previousClose(
       ticker
     );
-    if (prevClosePriceData) {
-      this._prevClosePriceCache.set(tickerKey, prevClosePriceData);
-      if (this._prevClosePriceCache.size > MAX_PRICE_CACHE_SIZE) {
-        this._prevClosePriceCache.delete(
-          this._prevClosePriceCache.keys().next().value
+
+    if (
+      prevClosePriceData.resultsCount === 0 ||
+      !prevClosePriceData.results?.length
+    ) {
+      const results = prevClosePriceData.results[0];
+
+      DatabaseManager.tickerCache.set(tickerKey, results);
+      if (DatabaseManager.tickerCache.size > MAX_PRICE_CACHE_SIZE) {
+        DatabaseManager.tickerCache.delete(
+          DatabaseManager.tickerCache.keys().next().value
         );
       }
-    }
-
-    return prevClosePriceData;
-  }
-
-  /* getPrevClosePriceData but will return from cache if valid and save to cache if not */
-  public async cacheGetPrevClosePriceData(
-    ticker: string
-  ): Promise<IAggsPreviousClose> {
-    const cachedPriceInfo = await DatabaseManager.getCachedPrice(ticker);
-    if (cachedPriceInfo) {
-      console.log(`Found cached price data for ${ticker}`);
-      return {
-        ticker,
-        status: 'OK',
-        resultsCount: 1,
-        results: [cachedPriceInfo],
-      };
-    }
-
-    console.log(`Requesting price data for ${ticker}`);
-    const quote = await this.getPrevClosePriceData(ticker);
-
-    if (quote.status !== 'OK') {
-      throw new Error(quote.status);
-    } else if (quote.resultsCount === 0 || !quote.results?.length) {
+      DatabaseManager.setCachedStockInfo(ticker, results);
+      return results;
+    } else {
       console.log(`No price data found for ${ticker}`);
-      return quote;
+      return null;
     }
-
-    const results = quote.results[0];
-
-    // If we got valid data, cache and return it
-    console.log(`Caching price data for ${ticker}`);
-    DatabaseManager.setCachedStockInfo(ticker, results);
-    return quote;
   }
 
   /**

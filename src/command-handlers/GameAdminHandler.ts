@@ -217,8 +217,8 @@ class GameAdmin extends BaseCommentHandler {
     const tickerPricePromises = tickersToFetch.map<Promise<[string, number]>>(
       async (ticker) => {
         try {
-          const priceData = await PolygonApi.cacheGetPrevClosePriceData(ticker);
-          return [ticker, priceData.results[0].c];
+          const priceData = await PolygonApi.getPrevClosePriceData(ticker);
+          return [ticker, priceData.c];
         } catch (_err) {
           // This shouldn't throw unless a stock is delisted or something...
           ErrorReporter.reportErrorInDebugChannel(

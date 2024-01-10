@@ -51,9 +51,13 @@ class DatabaseManager {
       },
     });
     this._dbClient.on('error', this.handleError.bind(this));
-    await this._dbClient.connect();
+
     this._reconnectAttempts = 0;
+    await this._dbClient.connect();
     console.log('Connected to database!');
+
+    // Populating cache
+    this.populateTickerCacheFromDb();
   }
 
   _reconnectAttempts = 0;
@@ -74,14 +78,29 @@ class DatabaseManager {
     ErrorReporter.reportErrorInDebugChannel('Database error', err);
   }
 
-  public async getCachedPrice(ticker: string): Promise<IAggsResults> {
+  /**
+   * In-memory cache of stock price data keyed by ticker. Populated from
+   * database on init, and updated as new data is fetched from Polygon.
+   * LRU cache so that stocks that aren't checked often will be evicted.
+   */
+  public tickerCache: Map<string, IAggsResults> = new Map();
+  /* Get all ticker info currently stored in the DB and put into cache */
+  public async populateTickerCacheFromDb(): Promise<void> {
     try {
-      const reply = await this._dbClient.get(`stock:${ticker}`);
-      const results: IAggsResults = JSON.parse(reply);
-      return results;
+      const stockKeys = await this._dbClient.keys('stock:*');
+      if (stockKeys == null || stockKeys.length === 0) {
+        return;
+      }
+
+      const stocks = (await this._dbClient.mGet(stockKeys)) ?? [];
+
+      stocks.forEach((stock) => {
+        const stockInfo: IAggsResults = JSON.parse(stock);
+        this.tickerCache.set(stockInfo.T, stockInfo);
+      });
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
-        'Database Error: Failed to get cached price',
+        'Database Error: Failed to populate ticker cache',
         err
       );
     }
@@ -96,6 +115,7 @@ class DatabaseManager {
     this._dbClient.set(`stock:${ticker}`, stringified, {
       EXAT: expireTime,
     });
+    this.tickerCache.set(ticker, results);
   }
 
   public async getAccount(

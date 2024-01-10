@@ -220,7 +220,7 @@ class UserAccountManager extends BaseCommentHandler {
     const tickerPricePromises = holdingEntriesZeroesRemoved.map(
       async ([ticker]) => {
         try {
-          const priceData = await PolygonApi.cacheGetPrevClosePriceData(ticker);
+          const priceData = await PolygonApi.getPrevClosePriceData(ticker);
           return priceData;
         } catch (_err) {
           // Not all stocks have rich info, eat throw
@@ -233,13 +233,13 @@ class UserAccountManager extends BaseCommentHandler {
       Record<string, number>
     >((acc, tickerPrice, i) => {
       if (tickerPrice == null) return acc;
-      const currPrice = tickerPrice.results[0].c;
+      const currPrice = tickerPrice.c;
       // Order is reserved throughout all these operations so can find
       // quantity using index
       const totalCost = currPrice * holdingEntriesZeroesRemoved[i][1];
       portfolioSum += totalCost;
 
-      acc[tickerPrice.ticker] = currPrice;
+      acc[tickerPrice.T] = currPrice;
       return acc;
     }, {});
 
