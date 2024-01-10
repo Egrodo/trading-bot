@@ -218,6 +218,11 @@ class GameAdmin extends BaseCommentHandler {
       async (ticker) => {
         try {
           const priceData = await PolygonApi.getPrevClosePriceData(ticker);
+          if (!priceData) {
+            throw new Error(
+              `No price data found for ${ticker} in leaderboard calculations. Where did it go?`
+            );
+          }
           return [ticker, priceData.c];
         } catch (_err) {
           ErrorReporter.reportErrorInDebugChannel(
