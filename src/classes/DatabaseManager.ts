@@ -57,7 +57,7 @@ class DatabaseManager {
     console.log('Connected to database!');
 
     // Populating cache
-    this.populateTickerCacheFromDb();
+    return this.populateTickerCacheFromDb();
   }
 
   _reconnectAttempts = 0;
@@ -81,7 +81,7 @@ class DatabaseManager {
   /**
    * In-memory cache of stock price data keyed by ticker. Populated from
    * database on init, and updated as new data is fetched from Polygon.
-   * LRU cache so that stocks that aren't checked often will be evicted.
+   * Keyed with ticker:dateString to ensure we don't have stale data.
    */
   public tickerCache: Map<string, IAggsResults> = new Map();
   /* Get all ticker info currently stored in the DB and put into cache */
@@ -96,7 +96,8 @@ class DatabaseManager {
 
       stocks.forEach((stock) => {
         const stockInfo: IAggsResults = JSON.parse(stock);
-        this.tickerCache.set(stockInfo.T, stockInfo);
+        const tickerKey = `${stockInfo.T}:${new Date().toDateString()}`;
+        this.tickerCache.set(tickerKey, stockInfo);
       });
     } catch (err) {
       ErrorReporter.reportErrorInDebugChannel(
@@ -115,7 +116,8 @@ class DatabaseManager {
     this._dbClient.set(`stock:${ticker}`, stringified, {
       EXAT: expireTime,
     });
-    this.tickerCache.set(ticker, results);
+    const tickerKey = `${ticker}:${new Date().toDateString()}`;
+    this.tickerCache.set(tickerKey, results);
   }
 
   public async getAccount(

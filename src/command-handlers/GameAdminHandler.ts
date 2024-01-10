@@ -221,7 +221,7 @@ class GameAdmin extends BaseCommentHandler {
           return [ticker, priceData.c];
         } catch (_err) {
           // This shouldn't throw unless a stock is delisted or something...
-          ErrorReporter.reportErrorInDebugChannel(
+          TODO: ErrorReporter.reportErrorInDebugChannel(
             `Error fetching ticker price`,
             ticker,
             _err

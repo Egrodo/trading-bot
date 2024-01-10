@@ -56,7 +56,11 @@ export function startJobs(client: Client) {
   );
 
   // TODO: DEBUG: DEV: Remove this
-  leaderboardJob(client);
+  try {
+    leaderboardJob(client);
+  } catch (err) {
+    console.error(err);
+  }
 
   const jobs = [
     seasonChangeJob,

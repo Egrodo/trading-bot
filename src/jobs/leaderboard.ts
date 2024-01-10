@@ -38,7 +38,7 @@ export async function leaderboardJob(
   client: Client,
   _nextJob?: Date
 ): Promise<void> {
-  const currentSeason = await GameAdminHandler.activeSeason?.name;
+  const currentSeason = GameAdminHandler.activeSeason?.name;
   if (!currentSeason) {
     console.warn('No active season found.');
     return;
@@ -46,9 +46,20 @@ export async function leaderboardJob(
   const accountsForSeason = await DatabaseManager.getAccountsForSeason(
     currentSeason
   );
-  const tickersNeeded = (
-    await GameAdminHandler.getAllTickersForAccounts(accountsForSeason)
-  )?.filter((ticker) => !DatabaseManager.tickerCache.has(ticker));
+
+  const allTickers = await GameAdminHandler.getAllTickersForAccounts(
+    accountsForSeason
+  );
+
+  const tickersNeeded = allTickers.filter((ticker) => {
+    const tickerKey = `${ticker}:${new Date().toDateString()}`;
+    return !DatabaseManager.tickerCache.has(tickerKey);
+  });
+
+  if (!tickersNeeded.length) {
+    attemptPost(client);
+    return;
+  }
 
   const tickerChunks = chunkArray<string>(
     tickersNeeded,
@@ -56,8 +67,6 @@ export async function leaderboardJob(
   );
 
   console.log(`Slowly requesting ${tickerChunks.length} chunks of tickers`);
-
-  if (!tickerChunks.length) return;
 
   const priceCashInterval = global.setInterval(async () => {
     const tickersToRequest = tickerChunks.shift();

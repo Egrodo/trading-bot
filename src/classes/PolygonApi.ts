@@ -8,7 +8,7 @@ import DatabaseManager from './DatabaseManager';
 import { IAggsResults } from '../types';
 
 const MAX_PRICE_CACHE_SIZE = 100;
-const MAX_TICKER_INFO_CACHE_SIZE = 100;
+const MAX_TICKER_INFO_CACHE_SIZE = 500;
 /**
  * Results description:
  * c: number; The close price for the symbol in the given time period
@@ -35,24 +35,26 @@ class PolygonApi {
       ticker
     );
 
+    console.log(prevClosePriceData);
+
     if (
       prevClosePriceData.resultsCount === 0 ||
       !prevClosePriceData.results?.length
     ) {
-      const results = prevClosePriceData.results[0];
-
-      DatabaseManager.tickerCache.set(tickerKey, results);
-      if (DatabaseManager.tickerCache.size > MAX_PRICE_CACHE_SIZE) {
-        DatabaseManager.tickerCache.delete(
-          DatabaseManager.tickerCache.keys().next().value
-        );
-      }
-      DatabaseManager.setCachedStockInfo(ticker, results);
-      return results;
-    } else {
       console.log(`No price data found for ${ticker}`);
       return null;
     }
+
+    const results = prevClosePriceData.results[0];
+
+    DatabaseManager.tickerCache.set(tickerKey, results);
+    if (DatabaseManager.tickerCache.size > MAX_PRICE_CACHE_SIZE) {
+      DatabaseManager.tickerCache.delete(
+        DatabaseManager.tickerCache.keys().next().value
+      );
+    }
+    DatabaseManager.setCachedStockInfo(ticker, results);
+    return results;
   }
 
   /**
