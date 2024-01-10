@@ -80,6 +80,7 @@ export interface PastTrade {
   price: number;
   type: TradeType;
   quantity: number;
+  remainingBalance: number;
 }
 
 export interface SeasonDocument {

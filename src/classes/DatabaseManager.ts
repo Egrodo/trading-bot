@@ -4,6 +4,7 @@ import * as ENV from '../../env.json';
 import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
 import type {
   IAggsResults,
+  PastTrade,
   SeasonDocument,
   UserAccount,
   UserAccountTupleList,
@@ -295,16 +296,16 @@ class DatabaseManager {
       ...userAccount.currentHoldings,
       [ticker]: quantity + (userAccount.currentHoldings[ticker] ?? 0),
     };
+    const newUserBalance = userAccount.balance - price * quantity;
 
-    const newTrade = {
+    const newTrade /* : PastTrade */ = {
       ticker,
       timestamp: Date.now(),
       price,
       type: TradeType.BUY,
       quantity,
+      remainingBalance: newUserBalance,
     };
-
-    const newUserBalance = userAccount.balance - price * quantity;
 
     try {
       const userIdKey = `user:${userId}:${seasonName}`;
@@ -360,15 +361,15 @@ class DatabaseManager {
         newCurrentHoldings[ticker] = newQuantity;
       }
 
-      const newTrade = {
+      const newUserBalance = userAccount.balance + price * quantity;
+      const newTrade /* : PastTrade */ = {
         ticker,
         timestamp: Date.now(),
         type: TradeType.SELL,
         price,
         quantity,
+        remainingBalance: newUserBalance,
       };
-
-      const newUserBalance = userAccount.balance + price * quantity;
 
       const userIdKey = `user:${userId}:${seasonName}`;
       // Update user balance first, if that fails we can exit early
