@@ -2,11 +2,17 @@ import { createClient, RedisClientType } from 'redis';
 import ErrorReporter from '../utils/ErrorReporter';
 import * as ENV from '../../env.json';
 import { getNextStockMarketOpeningTimestamp } from '../utils/helpers';
-import type { IAggsResults, SeasonDocument, UserAccount } from '../types';
+import type {
+  IAggsResults,
+  SeasonDocument,
+  UserAccount,
+  UserAccountTupleList,
+} from '../types';
 
 import { TradeType } from '../types';
 
 const MAX_CONNECTION_ATTEMPTS = 5;
+
 /**
  * Database design docs:
  *
@@ -114,7 +120,7 @@ class DatabaseManager {
 
   public async getAccountsForSeason(
     seasonName: string
-  ): Promise<Array<[accountId: string, accountData: UserAccount]>> {
+  ): Promise<UserAccountTupleList> {
     try {
       const userKeys = await this._dbClient.keys(`user:*:${seasonName}`);
       if (userKeys == null || userKeys.length === 0) {
@@ -326,6 +332,7 @@ class DatabaseManager {
       };
 
       if (newQuantity === 0) {
+        // There should never be a scenario where a user has 0 of a stock in their portfolio
         delete newCurrentHoldings[ticker];
       } else {
         newCurrentHoldings[ticker] = newQuantity;

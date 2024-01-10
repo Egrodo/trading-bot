@@ -75,6 +75,12 @@ export function isValidStockTicker(ticker: string): boolean {
   return ticker && validTickerRegex.test(ticker);
 }
 
+export function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  return Array.from({ length: Math.ceil(array.length / chunkSize) }, (_v, i) =>
+    array.slice(i * chunkSize, i * chunkSize + chunkSize)
+  );
+}
+
 // export default {
 //   // User specific debouncer. NOTE: Potential memory leak here if runs too long without clearing userMap.
 //   rateLimiter: (delay: number, fn: Function): (msg: Message) => void => {

@@ -52,6 +52,10 @@ export interface UserAccount {
   signupTs: number;
 }
 
+export type UserAccountTupleList = Array<
+  [accountId: string, accountData: UserAccount]
+>;
+
 // Type not exported from polygon lib for some reason
 export interface IAggsResults {
   T?: string;

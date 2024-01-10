@@ -1,4 +1,8 @@
-import { CommandListType, SeasonDocument } from '../types';
+import {
+  CommandListType,
+  SeasonDocument,
+  UserAccountTupleList,
+} from '../types';
 import ENV from '../../env.json';
 import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import BaseCommentHandler from './BaseCommandHandler';
@@ -7,6 +11,9 @@ import ErrorReporter from '../utils/ErrorReporter';
 import { richStrings, strings } from '../static/strings';
 import PolygonApi from '../classes/PolygonApi';
 import { GuardClientExists, formatAmountToReadable } from '../utils/helpers';
+
+import type { Client } from 'discord.js';
+
 type LeaderboardDataType = { [accountId: string]: /* accountValue */ number };
 
 const MAX_USERS_TO_SHOW_ON_LEADERBOARD = 10;
@@ -111,8 +118,8 @@ class GameAdmin extends BaseCommentHandler {
   }
 
   @GuardClientExists()
-  public async checkForSeasonChanges(): Promise<void> {
-    this.fetchSeasonInfo();
+  public async checkForSeasonChanges(_client: Client): Promise<void> {
+    return this.fetchSeasonInfo();
   }
 
   private async fetchSeasonInfo(): Promise<void> {
@@ -180,7 +187,22 @@ class GameAdmin extends BaseCommentHandler {
     await this.fetchSeasonInfo();
   }
 
-  // Do work to fetch all user accounts and calculate + sort by account value
+  /* Get a de-dupped list of all tickers owned by all users given */
+  public async getAllTickersForAccounts(
+    accounts: UserAccountTupleList
+  ): Promise<string[]> {
+    const tickersToFetch = accounts.reduce<string[]>(
+      (acc, [_accountId, accountData]) => {
+        acc.push(...Object.keys(accountData.currentHoldings));
+        return acc;
+      },
+      []
+    );
+
+    // Remove duplicates
+    return [...new Set(tickersToFetch)];
+  }
+
   public async getLeaderboardDataForSeason(
     seasonName: string,
     limit = MAX_USERS_TO_SHOW_ON_LEADERBOARD
@@ -188,17 +210,10 @@ class GameAdmin extends BaseCommentHandler {
     const accountsForSeason = await DatabaseManager.getAccountsForSeason(
       seasonName
     );
-
-    if (accountsForSeason.length === 0) return {};
-
-    // Get all tickers owned by all users
-    const tickersToFetch = accountsForSeason.reduce<string[]>(
-      (acc, [_accountId, accountData]) => {
-        acc.push(...Object.keys(accountData.currentHoldings));
-        return acc;
-      },
-      []
+    const tickersToFetch = await this.getAllTickersForAccounts(
+      accountsForSeason
     );
+
     const tickerPricePromises = tickersToFetch.map<Promise<[string, number]>>(
       async (ticker) => {
         try {
