@@ -373,7 +373,7 @@ class UserAccountManager extends BaseCommentHandler {
 
     // Compose the msg
     const embed = new EmbedBuilder()
-      .setColor('#123abc') // TODO:
+      .setColor('#008cff')
       .setTitle(richStrings.tradeSummaryTitle(ticker))
       .setAuthor({
         name: ENV.botName,

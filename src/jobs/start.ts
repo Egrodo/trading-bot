@@ -55,13 +55,6 @@ export function startJobs(client: Client) {
     'Market Closing Leaderboard Posting'
   );
 
-  // TODO: DEBUG: DEV: Remove this
-  try {
-    leaderboardJob(client);
-  } catch (err) {
-    console.error(err);
-  }
-
   const jobs = [
     seasonChangeJob,
     marketOpenLeaderboardPost,

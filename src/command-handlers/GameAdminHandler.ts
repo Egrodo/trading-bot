@@ -220,8 +220,7 @@ class GameAdmin extends BaseCommentHandler {
           const priceData = await PolygonApi.getPrevClosePriceData(ticker);
           return [ticker, priceData.c];
         } catch (_err) {
-          // This shouldn't throw unless a stock is delisted or something...
-          TODO: ErrorReporter.reportErrorInDebugChannel(
+          ErrorReporter.reportErrorInDebugChannel(
             `Error fetching ticker price`,
             ticker,
             _err
