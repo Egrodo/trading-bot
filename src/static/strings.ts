@@ -46,6 +46,7 @@ function getStrings(): StringsType {
   strings.portfolioOverflow = 'You own more stocks than can be shown here';
   strings.cash = 'Cash';
   strings.portfolioNoStocks = `You don't have any stocks in your portfolio! Buy some with /buy`;
+  strings.notYetSupported = `This command is not yet supported`;
 
   richStrings.checkBalance = (balance: number, user?: string) =>
     `${user ? user : ''} ${

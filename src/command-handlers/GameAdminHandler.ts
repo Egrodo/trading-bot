@@ -328,17 +328,20 @@ class GameAdmin extends BaseCommentHandler {
   }
 
   public async handleViewLeaderboardCommand(interaction: CommandInteraction) {
-    const seasonName = interaction.options.get('name')?.value as string;
-    const whichSeason = seasonName ?? this.activeSeason?.name;
+    // TODO: This can't all be calculated at command-time... fix
+    interaction.reply(strings.notYetSupported);
+    return;
+    // const seasonName = interaction.options.get('name')?.value as string;
+    // const whichSeason = seasonName ?? this.activeSeason?.name;
 
-    await interaction.deferReply();
-    const embed = await this.createLeaderboardMsg(whichSeason);
+    // await interaction.deferReply();
+    // const embed = await this.createLeaderboardMsg(whichSeason);
 
-    if (!embed) {
-      interaction.editReply(strings.noLeaderboardData);
-      return;
-    }
-    interaction.editReply({ embeds: [embed] });
+    // if (!embed) {
+    //   interaction.editReply(strings.noLeaderboardData);
+    //   return;
+    // }
+    // interaction.editReply({ embeds: [embed] });
   }
 
   private async handleAddNewSeasonCommand(interaction: CommandInteraction) {

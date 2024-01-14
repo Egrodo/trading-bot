@@ -82,4 +82,8 @@ export async function leaderboardJob(
       PolygonApi.getPrevClosePriceData(ticker)
     );
   }, LEADERBOARD_POST_INTERVAL);
+  // const promise = new Promise<void>((resolve) => {
+  //   priceCashInterval.unref();
+  //   priceCashInterval.on('close', resolve);
+  // });
 }
