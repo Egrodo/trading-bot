@@ -1,5 +1,6 @@
 import { PastTrade, TradeType } from '../types';
 import { formatAmountToReadable } from '../utils/helpers';
+import ENV from '../../env.json';
 /* eslint quotes: ["error", "backtick"] */
 
 interface StringsType {
@@ -75,7 +76,9 @@ function getStrings(): StringsType {
   richStrings.signupSuccess = (balance: number) =>
     `Congrats, you've signed up for this season and have a starting balance of ${formatAmountToReadable(
       balance
-    )}. Check out #todo for a list of commands & game information!`;
+    )}. Check out ${
+      ENV.tradingChannelName
+    } for a list of commands & game information!`;
   richStrings.buySuccess = (
     quantity: number,
     ticker: string,
