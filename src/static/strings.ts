@@ -66,7 +66,9 @@ function getStrings(): StringsType {
   ) =>
     `You don't have enough money to buy ${quantity} shares of ${ticker}. You have ${formatAmountToReadable(
       userBalance
-    )} but need ${formatAmountToReadable(totalCost)}.`;
+    )} but need ${formatAmountToReadable(
+      totalCost
+    )}. You can afford ${Math.floor(userBalance / totalCost)} shares.`;
   richStrings.seasonAddSuccess = (
     seasonName: string,
     startDate: Date,
@@ -123,7 +125,7 @@ function getStrings(): StringsType {
 
   richStrings.userPlacementMedal = (username: string, place: number) => {
     const placeMedals = ['🥇', '🥈', '🥉'];
-    const placeMedal = place < 3 ? `${placeMedals[place]}` : `${place}:`;
+    const placeMedal = place < 3 ? `${placeMedals[place]}` : `${place + 1}:`;
     return `${placeMedal} ${username}`;
   };
 
