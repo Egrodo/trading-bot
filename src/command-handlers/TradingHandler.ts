@@ -10,7 +10,6 @@ import ENV from '../../env.json';
 import ErrorReporter from '../utils/ErrorReporter';
 import PolygonApi from '../classes/PolygonApi';
 import { CommandListType, IAggsResults } from '../types';
-import { IAggsPreviousClose } from '@polygon.io/client-js';
 import DatabaseManager from '../classes/DatabaseManager';
 import BaseCommentHandler from './BaseCommandHandler';
 import GameAdminManager from './GameAdminHandler';
@@ -20,6 +19,11 @@ import fsPromise from 'fs/promises';
 import path from 'path';
 
 const TWO_DAYS = 24 * 2 * 60 * 60 * 1000;
+
+// TODO: Seasons don't work? If a season isn't active users shouldn't be able to trade...
+// TODO: Fix by closing the market/trading for 3-4 hours from market close, 30 min before.
+// TODO: It's probably a good idea to cache stock prices for an extra day so that
+// if the API is down we can still show a decent estimate of the price.
 class TradingCommandHandler extends BaseCommentHandler {
   public commands: CommandListType = {
     price: {
@@ -272,7 +276,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   public async handleBuyCommand(interaction: CommandInteraction) {
-    if (!GameAdminManager.activeSeason) {
+    if (GameAdminManager.activeSeason == null) {
       interaction.reply({
         content: strings.noActiveSeason,
         ephemeral: true,
@@ -330,6 +334,7 @@ class TradingCommandHandler extends BaseCommentHandler {
           userBalance,
           quantity,
           ticker,
+          stockPrice,
           totalCost
         ),
       });
@@ -388,7 +393,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   }
 
   public async handleSellCommand(interaction: CommandInteraction) {
-    if (!GameAdminManager.activeSeason) {
+    if (GameAdminManager.activeSeason == null) {
       interaction.reply({
         content: strings.noActiveSeason,
         ephemeral: true,

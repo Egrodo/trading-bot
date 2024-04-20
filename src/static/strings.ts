@@ -62,13 +62,14 @@ function getStrings(): StringsType {
     userBalance: number,
     quantity: number,
     ticker: string,
+    stockPrice: number,
     totalCost: number
   ) =>
     `You don't have enough money to buy ${quantity} shares of ${ticker}. You have ${formatAmountToReadable(
       userBalance
     )} but need ${formatAmountToReadable(
       totalCost
-    )}. You can afford ${Math.floor(userBalance / totalCost)} shares.`;
+    )}. You can afford ${Math.floor(userBalance / stockPrice)} shares.`;
   richStrings.seasonAddSuccess = (
     seasonName: string,
     startDate: Date,

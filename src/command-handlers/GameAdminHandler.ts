@@ -122,6 +122,8 @@ class GameAdmin extends BaseCommentHandler {
     return this.fetchSeasonInfo();
   }
 
+  // Don't trigger anything as a result of this function being ran since it's
+  // also being used to check for season ends
   private async fetchSeasonInfo(): Promise<void> {
     console.log('Fetching season info...');
     const allSeasons = await DatabaseManager.getAllSeasons();
@@ -137,10 +139,8 @@ class GameAdmin extends BaseCommentHandler {
     const activeSeason = allSeasons.find(
       (season) => season.start < now && season.end > now
     );
+    this.activeSeason = activeSeason;
     if (activeSeason) {
-      this.activeSeason = activeSeason;
-      // TODO: This might also need to trigger some other things,
-      // like announcement strings in the trading channel
       console.log(`Active season is "${this.activeSeason.name}"`);
     } else {
       console.log(`There is currently no active season.`);
@@ -184,7 +184,7 @@ class GameAdmin extends BaseCommentHandler {
     await interaction.reply(
       `${interaction.user.username} ended the season ${name}`
     );
-    await this.fetchSeasonInfo();
+    this.activeSeason = null;
   }
 
   /* Get a de-dupped list of all tickers owned by all users given */
