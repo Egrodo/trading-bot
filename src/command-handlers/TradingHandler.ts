@@ -24,7 +24,7 @@ class TradingCommandHandler extends BaseCommentHandler {
   public commands: CommandListType = {
     price: {
       description: 'Check the price of a stock',
-      allowedChannels: [ENV.debugInfoChannelId, ENV.tradingChannelId],
+      allowedChannels: ENV.allowedChannelsForPrice,
       handler: this.handlePriceCommand.bind(this),
       options: [
         {
