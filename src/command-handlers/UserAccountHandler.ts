@@ -17,22 +17,22 @@ class UserAccountManager extends BaseCommentHandler {
   public commands: CommandListType = {
     signup: {
       description: "Sign up for the current season's trading competition",
-      allowedChannel: ENV.tradingChannelId,
+      allowedChannels: [ENV.tradingChannelId],
       handler: this.handleSignupCommand.bind(this),
     },
     balance: {
       description: 'Check how much you have in cash',
-      allowedChannel: ENV.tradingChannelId,
+      allowedChannels: [ENV.tradingChannelId],
       handler: this.handleBalanceCommand.bind(this),
     },
     portfolio: {
       description: 'Check the current stock holdings on your account',
-      allowedChannel: ENV.tradingChannelId,
+      allowedChannels: [ENV.tradingChannelId],
       handler: this.handlePortfolioCommand.bind(this),
     },
     asset: {
       description: 'View your trading history for a specific stock',
-      allowedChannel: ENV.tradingChannelId,
+      allowedChannels: [ENV.tradingChannelId],
       handler: this.handleAssetCommand.bind(this),
       options: [
         {

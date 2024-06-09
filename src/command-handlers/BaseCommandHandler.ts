@@ -53,11 +53,9 @@ class BaseCommentHandler {
     }
 
     // Ensure that the command is only used in the proper channel.
-    if (!localCommand.allowedChannel.includes(interaction.channelId)) {
+    if (!localCommand.allowedChannels.includes(interaction.channelId)) {
       interaction.reply({
-        content: richStrings.wrongChannel(
-          localCommand.allowedChannel.toString()
-        ),
+        content: richStrings.wrongChannel(localCommand.allowedChannels),
         ephemeral: true,
       });
       return;

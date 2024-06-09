@@ -120,8 +120,10 @@ function getStrings(): StringsType {
     } currently valued at ${formatAmountToReadable(
       unitPrice
     )} each, worth ${formatAmountToReadable(quantity * unitPrice)}`;
-  richStrings.wrongChannel = (channelId: string) =>
-    `This command is only available in <#${channelId}>`;
+  richStrings.wrongChannel = (channelIds: string[]) =>
+    `This command is only available in ${channelIds
+      .map((id) => `<#${id}>`)
+      .join(', ')}`;
 
   richStrings.userPlacementMedal = (username: string, place: number) => {
     const placeMedals = ['🥇', '🥈', '🥉'];

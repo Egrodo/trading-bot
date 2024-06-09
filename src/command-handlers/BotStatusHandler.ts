@@ -10,14 +10,14 @@ class BotStatusHandler extends BaseCommentHandler {
   public commands: CommandListType = {
     ping: {
       description: 'Check if the bot is alive',
-      allowedChannel: ENV.debugInfoChannelId,
+      allowedChannels: [ENV.debugInfoChannelId],
       handler: this.handlePingCommand.bind(this),
       adminsOnly: true,
     },
     reset: {
       description:
         'Re-register the bot commands with Discord. Only use when necessary',
-      allowedChannel: ENV.debugInfoChannelId,
+      allowedChannels: [ENV.debugInfoChannelId],
       handler: this.handleReregisterCommandsCommand.bind(this),
       adminsOnly: true,
     },

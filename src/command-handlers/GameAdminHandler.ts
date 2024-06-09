@@ -31,7 +31,7 @@ class GameAdmin extends BaseCommentHandler {
   public commands: CommandListType = {
     season: {
       description: 'Get or set trading game seasons',
-      allowedChannel: ENV.debugInfoChannelId,
+      allowedChannels: [ENV.debugInfoChannelId],
       adminsOnly: true,
       subCommands: {
         current: {
@@ -88,7 +88,7 @@ class GameAdmin extends BaseCommentHandler {
     },
     leaderboard: {
       description: 'View player stat information',
-      allowedChannel: ENV.debugInfoChannelId,
+      allowedChannels: [ENV.debugInfoChannelId],
       adminsOnly: true,
       subCommands: {
         view: {

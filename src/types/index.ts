@@ -2,7 +2,7 @@ import { CommandInteraction } from 'discord.js';
 
 export interface CommandType {
   description: string;
-  allowedChannel: string;
+  allowedChannels: string[];
   handler?: (interaction: CommandInteraction) => Promise<void>; // undefined if subcommands are present
   // If a command is "admin-only" we will ensure the user has PermissionFlagsBits.Administrator before
   // they can use the command. Later this could be changed to "gamemakerOnly" and given to mods too.
@@ -24,16 +24,16 @@ export interface CommandWithOptionsType extends CommandType {
   }[];
 }
 
-export type SubcommandType = Omit<CommandType, 'allowedChannel'>;
+export type SubcommandType = Omit<CommandType, 'allowedChannels'>;
 
 export type SubcommandWithOptionsType = Omit<
   CommandWithOptionsType,
-  'allowedChannel'
+  'allowedChannels'
 >;
 
 export interface CommandWithSubCommandsType extends CommandType {
   subCommands: {
-    // Subcommands use the same allowedChannel as their parent command
+    // Subcommands use the same allowedChannels as their parent command
     [commandName: string]: SubcommandType | SubcommandWithOptionsType;
   };
 }
