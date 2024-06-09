@@ -50,6 +50,7 @@ class DatabaseManager {
         host: dbUrl,
         port: +dbPort,
       },
+      pingInterval: 1000,
     });
     this._dbClient.on('error', this.handleError.bind(this));
 
