@@ -105,7 +105,7 @@ function getStrings(): StringsType {
   richStrings.notEnoughStock = (ticker: string, quantity: number) =>
     `You don't have enough shares of ${ticker} to sell ${quantity}.`;
   richStrings.tooSoonToSell = (ticker) =>
-    `You can't sell ${ticker} yet since you bought it within the last 24 hours. This is to prevent price arbitrage.`;
+    `You can't sell ${ticker} yet since you bought it within the last 48 hours. This is to prevent price arbitrage.`;
   richStrings.seasonNameMismatch = (name: string, activeName: string) =>
     `The season you're trying to end, ${name}, doesn't match the active season, ${activeName}.`;
   richStrings.leaderboardDescription = (n: number) =>

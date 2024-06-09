@@ -19,6 +19,7 @@ import { formatAmountToReadable, isValidStockTicker } from '../utils/helpers';
 import fsPromise from 'fs/promises';
 import path from 'path';
 
+const TWO_DAYS = 24 * 2 * 60 * 60 * 1000;
 class TradingCommandHandler extends BaseCommentHandler {
   public commands: CommandListType = {
     price: {
@@ -438,11 +439,11 @@ class TradingCommandHandler extends BaseCommentHandler {
       return;
     }
 
-    // To prevent arbitrage, disallow user from selling a stock that they purchased within the last day.
+    // To prevent arbitrage, disallow user from selling a stock that they purchased within the last two days.
     const lastTradeOfStock = userAccount.tradeHistory.find(
       (trade) => trade.ticker === ticker
     );
-    if (lastTradeOfStock.timestamp > Date.now() - 24 * 60 * 60 * 1000) {
+    if (lastTradeOfStock.timestamp > Date.now() - TWO_DAYS) {
       interaction.editReply({
         content: richStrings.tooSoonToSell(ticker, lastTradeOfStock.timestamp),
       });
