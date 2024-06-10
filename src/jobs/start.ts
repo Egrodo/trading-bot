@@ -34,7 +34,7 @@ export function startJobs(client: Client) {
   // Check every day at midnight to see if the season has changed
   const seasonChangeJob = cronWrapper(
     '0 0 0 * * *',
-    GameAdminHandler.checkForSeasonChanges,
+    () => GameAdminHandler.checkForSeasonChanges(),
     client,
     'Season Change Check'
   );

@@ -75,6 +75,11 @@ class DatabaseManager {
       console.error('Database connection reset, attempting to reconnect...');
       await this._dbClient.disconnect();
       return this.init();
+    } else if (err.code === 'ETIMEDOUT') {
+      // We can ignore timeouts, it should (hopefully) reconnect the next
+      // time we need to use the DB...
+      console.error('Redis client timeout: ', err);
+      return;
     }
     console.error(err);
     ErrorReporter.reportErrorInDebugChannel('Database error', err);

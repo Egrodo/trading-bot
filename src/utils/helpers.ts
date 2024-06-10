@@ -1,9 +1,3 @@
-// import { Client, Message, PermissionsBitField, User } from "discord.js";
-
-// const SERVER_ID = "482608530105434112";
-import fsPromise from 'fs/promises';
-import ErrorReporter from './ErrorReporter';
-
 /**
  * Decorator that should be used on all public class methods
  * to ensure the client has been initialized before use.

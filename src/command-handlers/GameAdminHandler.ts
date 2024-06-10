@@ -118,7 +118,7 @@ class GameAdmin extends BaseCommentHandler {
   }
 
   @GuardClientExists()
-  public async checkForSeasonChanges(_client: Client): Promise<void> {
+  public async checkForSeasonChanges(): Promise<void> {
     return this.fetchSeasonInfo();
   }
 
