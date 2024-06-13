@@ -271,7 +271,6 @@ class TradingCommandHandler extends BaseCommentHandler {
     }
   }
 
-  // TODO: IDEA: If user can't afford, tell them how much many they can afford
   public async handleBuyCommand(interaction: CommandInteraction) {
     if (!GameAdminManager.activeSeason) {
       interaction.reply({
