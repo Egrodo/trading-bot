@@ -18,7 +18,7 @@ import { formatAmountToReadable, isValidStockTicker } from '../utils/helpers';
 import fsPromise from 'fs/promises';
 import path from 'path';
 
-const TWO_DAYS = 24 * 2 * 60 * 60 * 1000;
+const TWO_DAYS_IN_MS = 24 * 2 * 60 * 60 * 1000;
 
 // TODO: Seasons don't work? If a season isn't active users shouldn't be able to trade...
 // TODO: Fix by closing the market/trading for 3-4 hours from market close, 30 min before.
@@ -444,10 +444,22 @@ class TradingCommandHandler extends BaseCommentHandler {
     }
 
     // To prevent arbitrage, disallow user from selling a stock that they purchased within the last two days.
-    const lastTradeOfStock = userAccount.tradeHistory.find(
-      (trade) => trade.ticker === ticker
+    const lastTradeOfStock = userAccount.tradeHistory.reduce(
+      (foundTrade, currTrade) => {
+        if (foundTrade == null && currTrade.ticker === ticker) return currTrade;
+        if (
+          foundTrade != null &&
+          currTrade.ticker === ticker &&
+          currTrade.timestamp > foundTrade.timestamp
+        )
+          return currTrade;
+        return foundTrade;
+      },
+      null
     );
-    if (lastTradeOfStock.timestamp > Date.now() - TWO_DAYS) {
+    const twoDaysAgo = Date.now() - TWO_DAYS_IN_MS;
+    console.log(ticker, lastTradeOfStock);
+    if (lastTradeOfStock.timestamp > twoDaysAgo) {
       interaction.editReply({
         content: richStrings.tooSoonToSell(ticker, lastTradeOfStock.timestamp),
       });
